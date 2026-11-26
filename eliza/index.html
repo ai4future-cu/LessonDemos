@@ -6,13 +6,13 @@
   <meta name="description" content="Explore Joseph Weizenbaum’s ELIZA and today’s chatbots. Chat, explore ELIZA’s rules, and compare replies.">
   <title>Chatbot Lab</title>
   <link rel="stylesheet" href="chatbot-assets/style.css?v=lab-heading-1">
-  <link rel="stylesheet" href="../compare/style.css?v=recipients-1">
+  <link rel="stylesheet" href="../compare/style.css?v=compare-layout-2">
   <script defer src="chatbot-assets/eliza-hay.js?v=keyword-order-1"></script>
   <script defer src="chatbot-assets/app.js?v=compact-controls-1"></script>
   <script defer src="../compare/config.js?v=workshop-1"></script>
   <script defer src="../compare/system-prompt.js?v=classroom-1"></script>
   <script defer src="../compare/api.js?v=classroom-1"></script>
-  <script defer src="../compare/app.js?v=recipients-1"></script>
+  <script defer src="../compare/app.js?v=compare-layout-2"></script>
 </head>
 <body>
   <main>
@@ -174,43 +174,6 @@
     </section>
 
     <section id="compare-panel" role="tabpanel" aria-labelledby="compare-tab" hidden>
-      <details id="api-settings" class="api-settings">
-        <summary>API settings</summary>
-        <form id="api-settings-form" autocomplete="off">
-          <div class="api-fields">
-            <div class="api-field">
-              <label for="api-key">API key</label>
-              <input id="api-key" type="password" placeholder="Paste your API key" autocomplete="off" autocapitalize="off" spellcheck="false" required>
-            </div>
-            <div class="api-field">
-              <label for="api-model">Model</label>
-              <input id="api-model" type="text" value="deepseek-flash" placeholder="Enter the model ID" autocomplete="off" autocapitalize="off" spellcheck="false" required>
-            </div>
-          </div>
-          <details class="api-options">
-            <summary>API options</summary>
-            <div class="api-fields">
-              <div class="api-field">
-                <label for="api-base-url">API base URL</label>
-                <input id="api-base-url" type="url" value="https://api.deepseek.com" autocomplete="off" spellcheck="false" required>
-              </div>
-              <div class="api-field">
-                <label for="api-format">Format</label>
-                <select id="api-format">
-                  <option value="responses">Responses API</option>
-                  <option value="chat-completions" selected>Chat Completions API</option>
-                </select>
-              </div>
-            </div>
-          </details>
-          <div class="api-actions">
-            <p class="api-hint">Kept in this tab only. Refresh or clear the key when finished.</p>
-            <button type="button" id="clear-api" class="edit-button" disabled>Clear key</button>
-            <button type="submit" id="use-api" class="primary-button" disabled>Use this API</button>
-          </div>
-          <p id="api-settings-status" class="editor-status" role="status"></p>
-        </form>
-      </details>
     <form id="compare-form" class="flow-card input-card">
       <div class="input-heading">
         <label class="flow-title" for="compare-input">Your message</label>
@@ -266,6 +229,45 @@
         </details>
       </section>
     </div>
+
+      <p class="comparison-reflection"><strong>Think:</strong> How do their replies differ, and why?</p>
+      <details id="api-settings" class="api-settings">
+        <summary>API settings</summary>
+        <form id="api-settings-form" autocomplete="off">
+          <div class="api-fields">
+            <div class="api-field">
+              <label for="api-key">API key</label>
+              <input id="api-key" type="password" placeholder="Paste your API key" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            </div>
+            <div class="api-field">
+              <label for="api-model">Model</label>
+              <input id="api-model" type="text" value="deepseek-flash" placeholder="Enter the model ID" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            </div>
+          </div>
+          <details class="api-options">
+            <summary>API options</summary>
+            <div class="api-fields">
+              <div class="api-field">
+                <label for="api-base-url">API base URL</label>
+                <input id="api-base-url" type="url" value="https://api.deepseek.com" autocomplete="off" spellcheck="false" required>
+              </div>
+              <div class="api-field">
+                <label for="api-format">Format</label>
+                <select id="api-format">
+                  <option value="responses">Responses API</option>
+                  <option value="chat-completions" selected>Chat Completions API</option>
+                </select>
+              </div>
+            </div>
+          </details>
+          <div class="api-actions">
+            <p class="api-hint">Kept in this tab only. Refresh or clear the key when finished.</p>
+            <button type="button" id="clear-api" class="edit-button" disabled>Clear key</button>
+            <button type="submit" id="use-api" class="primary-button" disabled>Use this API</button>
+          </div>
+          <p id="api-settings-status" class="editor-status" role="status"></p>
+        </form>
+      </details>
 
     </section>
 

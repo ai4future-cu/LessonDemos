@@ -1,6 +1,10 @@
 # ELIZA & Modern AI
 
-The comparison page sends the same message to the existing ELIZA engine and a modern chatbot. Both conversations retain their own history. **New conversation** clears both and cancels an outstanding model request.
+The comparison page has one input and a **Send to** selector. **Both** is the default; **ELIZA only** and **Modern only** send to that chatbot alone. The send button and example messages follow the selected recipient. ELIZA-only turns make no modern model request, even when the modern API is disconnected.
+
+Both conversations retain their own history when switching recipients. A turn sent only to one bot does not appear in the other bot's log or context, and does not advance the other bot's reply state. **New conversation** clears both and cancels an outstanding model request while keeping the selected recipient and API settings. After separate follow-ups, start a new conversation for a fresh comparison with the same inputs.
+
+A reflection question follows the chatbot panels. **API settings** is at the bottom of the Compare tab.
 
 ELIZA cycles through the replies associated with each matching rule. It does not randomly select a reply. This matches the reply-selection mechanism described on page 40 of [Weizenbaum's 1966 paper](https://courses.cs.umbc.edu/undergraduate/CMSC471/papers/weizenbaum.eliza.1966.pdf#page=5); other existing classroom adaptations are retained.
 
@@ -88,12 +92,14 @@ The example reply above documents the interface; the page does not substitute it
 
 The supplied server binds only to `127.0.0.1` for local classroom demonstrations. A public GitHub repository or GitHub Pages can host the frontend, but does not run this Node backend. For shared online use, host the backend separately with access control and usage limits so visitors cannot freely spend your API balance.
 
+Publish the HTML, `compare/app.js`, and `compare/style.css` together. Updating only the HTML can leave the recipient selector unstyled and the live script sending to both bots. Update the stylesheet and script query versions in `eliza/index.html` whenever these assets change so browsers request the new release.
+
 Official reference: [OpenAI Responses API](https://developers.openai.com/api/reference/resources/responses/methods/create).
 
 ## Checks
 
 ```sh
-node --test compare/comparison.test.mjs
+node --test compare/*.test.mjs
 ```
 
 The tests use an injected local mock provider; they do not make paid model requests.

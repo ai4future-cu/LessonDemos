@@ -4,12 +4,14 @@
   const byId = id => document.getElementById(id);
   const input = byId('compare-input');
   const sendButton = byId('compare-send');
+  const recipient = byId('compare-recipient');
   const examples = [...document.querySelectorAll('[data-message]')];
   const elizaLog = byId('eliza-log');
   const modernLog = byId('modern-log');
   const api = window.ChatbotComparisonAPI;
   const keyInput = byId('api-key');
   const useAPI = byId('use-api');
+  byId('system-prompt-content').textContent = window.CHATBOT_COMPARISON_SYSTEM_PROMPT;
   const makeEliza = () => window.ElizaHay.make({ matchOriginalWords: true, randomReplies: false });
   let eliza = makeEliza();
   let modernHistory = [];
@@ -19,9 +21,16 @@
 
   function setBusy(busy) {
     pending = busy;
-    [input, sendButton, useAPI, ...examples].forEach(control => { control.disabled = busy; });
-    sendButton.textContent = busy ? 'Waiting…' : 'Send to both';
+    [input, sendButton, recipient, useAPI, ...examples].forEach(control => { control.disabled = busy; });
+    updateSendButton();
   }
+
+  function updateSendButton() {
+    const labels = { both: 'Send to both', eliza: 'Send to ELIZA', modern: 'Send to modern' };
+    sendButton.textContent = pending ? 'Waiting…' : labels[recipient.value];
+  }
+  recipient.addEventListener('change', updateSendButton);
+  updateSendButton();
 
   function setModernState(text, ready = false) {
     const badge = byId('modern-state');
@@ -72,7 +81,10 @@
   async function send(text) {
     const message = text.trim();
     if (!message || pending) return;
-    if (modernHistory.length >= 39) {
+    const sendToEliza = ['both', 'eliza'].includes(recipient.value);
+    const sendToModern = ['both', 'modern'].includes(recipient.value);
+    if (!sendToEliza && !sendToModern) return;
+    if (sendToModern && modernHistory.length >= 39) {
       byId('compare-status').textContent = 'Start a new conversation to continue.';
       return;
     }
@@ -83,14 +95,18 @@
     setBusy(true);
     byId('compare-status').textContent = '';
     input.value = '';
-    addMessage(elizaLog, message, 'user', 'You');
-    addMessage(modernLog, message, 'user', 'You');
-    modernHistory.push({ role: 'user', content: message });
-    const history = modernHistory.map(item => ({ ...item }));
-    byId('eliza-state').textContent = 'Thinking…';
-    setModernState('Thinking…');
+    if (sendToEliza) {
+      addMessage(elizaLog, message, 'user', 'You');
+      byId('eliza-state').textContent = 'Thinking…';
+    }
+    if (sendToModern) {
+      addMessage(modernLog, message, 'user', 'You');
+      modernHistory.push({ role: 'user', content: message });
+      setModernState('Thinking…');
+    }
 
     const elizaReply = (async () => {
+      if (!sendToEliza) return;
       try {
         const turn = await currentEliza.trace(message);
         if (current !== generation) return;
@@ -103,7 +119,9 @@
     })();
 
     const modernReply = (async () => {
+      if (!sendToModern) return;
       try {
+        const history = modernHistory.map(item => ({ ...item }));
         const result = await api.send(history, { signal: controller.signal });
         if (current !== generation) return;
         modernHistory.push({ role: 'assistant', content: result.reply });
