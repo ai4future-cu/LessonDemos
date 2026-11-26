@@ -327,7 +327,9 @@
   .demo-row{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:6px 0;}
   .chip-v{background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 8px;font-size:13px;font-weight:800;color:var(--ink);line-height:1.7;white-space:nowrap;}
   .vtable{display:inline-block;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.35);border-radius:10px;padding:6px 10px;}
-  .vrow{display:grid;grid-template-columns:74px 100px 100px 95px;gap:12px;font-size:13.5px;font-weight:700;color:#fff;align-items:center;}
+  .vrow{display:grid;grid-template-columns:74px 110px 95px;gap:12px;font-size:13.5px;font-weight:700;color:#fff;align-items:center;margin-bottom:7px;}
+  .vrow:last-child{margin-bottom:0;}
+  .vrow .mini-board{box-shadow:0 0 0 2px rgba(255,255,255,.35);border-radius:5px;}
   .vrow.vhead{color:var(--sun);font-weight:800;margin-bottom:3px;}
   .vrow.vdots{color:rgba(255,255,255,.6);}
   .demo-arrow{color:rgba(255,255,255,.7);font-weight:800;font-size:17px;}
@@ -900,9 +902,9 @@
     return '<span class="mini-board">'+inner+'</span>';
   }
   function vtableHtml(rows){
-    var h='<div class="vtable"><div class="vrow vhead"><span>board</span><span>state</span><span>move</span><span>value</span></div>';
+    var h='<div class="vtable"><div class="vrow vhead"><span>board</span><span>move</span><span>value</span></div>';
     rows.forEach(function(r){
-      h+='<div class="vrow"><span>'+r.board+'</span><span>'+r.pos+'</span><span>'+r.move+'</span><span>'+r.val+'</span></div>';
+      h+='<div class="vrow"><span>'+r.board+'</span><span>'+r.move+'</span><span>'+r.val+'</span></div>';
     });
     h+='<div class="vrow vdots"><span>⋯</span></div></div>';
     return h;
@@ -931,21 +933,24 @@
         return miniBoardHtml(st.board, st.m);
       }).join('<span class="demo-arrow">→</span>');
       var empty=new Array(9).fill(EMPTY);
-      var initRows=[
-        {board:miniBoardHtml(empty), pos:"position 1", move:"square 1", val:"0"},
-        {board:miniBoardHtml(empty), pos:"position 1", move:"square 3", val:"0"}
-      ];
-      var updRows=[];
-      for(var ri=0;ri<2 && ri<seq.length;ri++){
-        var before = ri===0 ? empty : seq[ri-1].board;
-        var upd=Math.round(lr*Math.pow(disc, seq.length-1-ri)*reward*10)/10;
-        updRows.push({board:miniBoardHtml(before), pos:"position "+(ri+1), move:"square "+(seq[ri].m+1), val:"0 → "+(upd>0?"+":"")+upd});
+      // the AI plays O, so its own moves in the game are the 2nd, 4th, ... boards
+      var aiIdx=[];
+      for(var ai=1;ai<seq.length;ai+=2) aiIdx.push(ai);
+      if(aiIdx.length===0) aiIdx=[0];
+      var initRows=[], updRows=[];
+      var limit=Math.min(2, aiIdx.length);
+      for(var ri=0;ri<limit;ri++){
+        var idx=aiIdx[ri];
+        var before = idx===0 ? empty : seq[idx-1].board;
+        initRows.push({board:miniBoardHtml(before), move:"square "+(seq[idx].m+1), val:"0"});
+        var upd=Math.round(lr*Math.pow(disc, seq.length-1-idx)*reward*10)/10;
+        updRows.push({board:miniBoardHtml(before), move:"square "+(seq[idx].m+1), val:"0 → "+(upd>0?"+":"")+upd});
       }
       return stepBox(1, "Initialize the value table",
                '<div class="explain">Every (state, move) starts at 0.</div>'+
                vtableHtml(initRows))+
              stepBox(2, "Play games and collect rewards",
-               '<div class="explain">It plays games to the end — here the AI is O against a practice partner. It mostly plays its best known moves, sometimes trying random ones.</div>'+
+               '<div class="explain">It plays the game many times to practice.</div>'+
                '<div class="demo-row">'+cells+'</div>'+
                '<div class="route-result '+resWord+'">result: '+resWord+' → reward '+(reward>0?"+":"")+reward+'</div>')+
              stepBox(3, "Update the value table",
@@ -1150,15 +1155,14 @@
                  '<span class="res '+rlCls(d)+'">value <b>'+d+'</b></span></div>';
         }).join("");
         html+=stepBox(2, "Each move — its learned value",
-          '<div class="explain">0 = a loss · 50 = a draw · 100 = a win</div>'+
+          '<div class="explain">It looks up the value table for the current position and reads the learned value of each move. (0 = a loss · 50 = a draw · 100 = a win)</div>'+
           '<div class="cand-grid">'+rows+'</div>');
         var rlLead = view.reflex
           ? (view.reflex==="win" ? "A reflex applied first — it took the win." : "A reflex applied first — it blocked your immediate threat.")
           : "No win to take and no threat to block — so it takes the move with the highest learned value.";
         html+=stepBox(3, "Reflexes first, then the highest value", '<div class="explain">'+rlLead+'</div>');
         html+=stepBox(4, "Output", '<div class="output-box">Play square <b>'+(view.chosen+1)+'</b>'+(winNow?' — I win!':'')+'</div>');
-        html+='<div class="brain-foot">It knows <b>'+view.cfg.positions+'</b> positions. Values keep changing as it plays more:</div>';
-        html+=curveSvg(view.cfg.curve);
+
       }
     }
     return html;
