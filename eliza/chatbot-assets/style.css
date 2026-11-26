@@ -20,7 +20,8 @@ body { margin: 0; min-height: 100dvh; }
 main { width: min(100% - 32px, 1040px); margin: 28px auto; }
 h1, h2, p { margin: 0; }
 .page-heading { margin-bottom: 12px; text-align: center; }
-h1 { color: var(--accent); font: 900 clamp(2.1rem, 5.8vw, 3.4rem)/1.1 system-ui, -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -.035em; text-shadow: 0 2px 0 #fff; }
+h1 { color: var(--accent); font: 900 clamp(2.7rem, 7.5vw, 4.75rem)/1.08 system-ui, -apple-system, BlinkMacSystemFont, sans-serif; letter-spacing: -.045em; -webkit-text-stroke: 2px #fff; paint-order: stroke fill; text-shadow: 3px 4px 0 #fff, 6px 8px 0 #211b3233; }
+.title-accent { color: #109d8f; }
 .subtitle { margin-top: 10px; color: var(--muted); font-size: 1rem; font-weight: 550; }
 h2 { font-size: 1.1rem; }
 button, input, select { font: inherit; color: inherit; }
@@ -145,12 +146,15 @@ button:disabled { cursor: default; opacity: .6; }
 .keyword-chip { padding: 1px 6px; border: 1px solid var(--panel-line); border-radius: 5px; background: var(--surface); }
 .keyword-chosen { border-color: var(--panel-edge); background: var(--panel-fill); color: var(--panel-ink); font-weight: 800; }
 .edit-button { padding: 5px 10px; border: 2px solid var(--panel-line); border-radius: 8px; background: var(--panel-tint); color: var(--panel-ink); font-size: .875rem; font-weight: 700; }
-.restore-button { display: block; margin: 10px 0 0 auto; }
+.restore-button { display: block; margin: 10px 0 0 auto; padding: 4px 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--muted); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.edit-button.restore-button:hover { background: transparent; color: var(--panel-ink); }
 .edit-button:hover, .add-button:hover { border-color: var(--panel-edge); background: var(--panel-fill); }
 .keyword-words { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 6px 0 8px; }
 .keyword-words li { padding: 1px 5px; border: 1px solid var(--panel-line); border-radius: 5px; background: var(--surface); font-size: .875rem; }
 .keyword-words .word-row { grid-template-columns: minmax(0, 1fr) auto; width: 10rem; max-width: 100%; padding: 3px; }
-.keyword-words .add-row { display: flex; align-items: center; padding: 0; border: 0; background: transparent; }
+.keyword-words .add-row { display: flex; flex: 1 0 100px; align-items: center; justify-content: space-between; gap: 12px; padding: 0; border: 0; background: transparent; }
+.keyword-words .restore-button { flex: 0 0 auto; margin: 0; }
+.keyword-words .row-field, .keyword-words .delete-row, .keyword-words .add-button { min-height: 38px; }
 .add-button { display: grid; place-items: center; width: 31px; min-height: 30px; padding: 0; border: 1px solid var(--panel-line); border-radius: 6px; color: var(--panel-ink); background: var(--panel-tint); box-shadow: 0 2px 0 var(--panel-line); font-size: 1.0625rem; font-weight: 800; }
 .pattern-key { color: var(--muted); font-size: .875rem; margin: 2px 0; }
 .pattern-key code { font-weight: 700; color: var(--panel-ink); }
@@ -171,7 +175,9 @@ button:disabled { cursor: default; opacity: .6; }
 .editor-status.error { color: #943234; }
 .editor-status:empty { display: none; }
 .rule-list, .reply-list { position: relative; display: grid; gap: 5px; max-height: 310px; overflow: auto; overscroll-behavior: contain; margin: 6px 0 0; padding: 4px; list-style: none; }
-.editor-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 7px; min-width: 0; padding: 6px; border: 2px solid var(--panel-line); border-radius: 10px; background: var(--surface); }
+.editor-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px; min-width: 0; padding: 6px; border: 2px solid var(--panel-line); border-radius: 10px; background: var(--surface); }
+.row-actions { display: flex; align-items: center; gap: 5px; }
+.row-actions .add-button, .row-actions .delete-row { flex: 0 0 28px; width: 28px; min-width: 28px; min-height: 30px; box-shadow: none; }
 .row-field { width: 100%; min-width: 0; min-height: 36px; padding: 5px 8px; border: 1px solid var(--panel-line); border-radius: 7px; color: inherit; background: var(--surface); font: inherit; font-size: 1rem; font-weight: 600; }
 textarea.row-field { display: block; field-sizing: content; resize: vertical; }
 .row-field.pattern-input { font-family: ui-monospace, monospace; }
@@ -179,7 +185,15 @@ textarea.row-field { display: block; field-sizing: content; resize: vertical; }
 .delete-row { display: grid; place-items: center; min-width: 26px; min-height: 28px; padding: 0 4px; border: 1px solid var(--panel-line); border-radius: 4px; color: var(--panel-ink); background: var(--surface); font-weight: 800; }
 .delete-row:hover:not(:disabled) { border-color: var(--panel-edge); background: var(--panel-tint); }
 .rule-row { grid-template-columns: 6rem minmax(0, 1fr) auto; }
+.rule-list .rule-row:has(> .row-field) { grid-template-columns: 6rem minmax(0, 1fr) 61px; }
+.reply-list .reply-row:has(> .row-field) { grid-template-columns: 4rem minmax(0, 1fr) 61px; }
+.rule-list .editor-row > .delete-row, .reply-list .editor-row > .delete-row { justify-self: start; width: 28px; min-width: 28px; min-height: 30px; }
 .rule-button { display: flex; align-items: center; justify-content: space-between; gap: 5px; width: 100%; min-height: 29px; padding: 3px 7px; border: 1px solid var(--panel-line); border-radius: 6px; background: var(--panel-background); box-shadow: 0 2px 0 var(--panel-tint); color: var(--panel-ink); text-align: start; font-size: .875rem; font-weight: 750; white-space: nowrap; }
+.rule-list .rule-button, .rule-list .row-field, .reply-list .row-field,
+.rule-list .editor-row :is(.delete-row, .add-button), .reply-list .editor-row :is(.delete-row, .add-button) { min-height: 38px; }
+.rule-tools { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.rule-tools .rule-order { flex: 1 1 0; min-width: 0; margin: 0; }
+.rule-tools .restore-button { flex: 0 0 auto; margin: 0 0 0 auto; }
 .rule-button:hover { border-color: var(--panel-edge); background: var(--panel-tint); }
 .rule-arrow { font-size: 1rem; line-height: 1; }
 .rule-order { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0 0; font-size: .875rem; }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Explore ELIZA, compare generations of chatbots, and play Tic-Tac-Toe.">
+  <meta name="description" content="Explore chatbots and play Tic-Tac-Toe in two classroom AI labs.">
   <title>AI Lesson Demos</title>
   <style>
     :root {
@@ -23,9 +23,13 @@
     h1 {
       margin: 0 0 10px;
       color: var(--accent);
-      font: 700 clamp(2.65rem, 8vw, 3.8rem)/1.05 Georgia, serif;
-      text-shadow: 2px 3px #fff, 3px 5px #241e3426;
+      font: 900 clamp(2.65rem, 7.5vw, 4.5rem)/1.08 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      letter-spacing: -.045em;
+      -webkit-text-stroke: 2px #fff;
+      paint-order: stroke fill;
+      text-shadow: 3px 4px 0 #fff, 6px 8px 0 #241e3433;
     }
+    .title-accent { color: #109d8f; }
     header p { margin: 0; color: var(--muted); font-size: 1rem; }
     .demos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
     .demo {
@@ -55,8 +59,6 @@
       --card-ink: #245940;
     }
     .game:hover { background: #e8f6ee; }
-    .comparison { grid-column: 1 / -1; }
-    .comparison .icon { border-radius: 14px; background: #fff1c5; color: #654407; }
     .icon {
       display: grid;
       place-items: center;
@@ -103,7 +105,7 @@
 <body>
   <main>
     <header>
-      <h1>AI Lesson Demos</h1>
+      <h1>AI Lesson <span class="title-accent">Demos</span></h1>
       <p>Choose a demo to get started.</p>
     </header>
     <nav class="demos" aria-label="Classroom demos">
@@ -111,31 +113,20 @@
         <span class="icon" aria-hidden="true">
           <img src="./eliza/chatbot-assets/chat-robot.png" alt="" width="112" height="106">
         </span>
-        <h2>ELIZA</h2>
-        <p>Try a conversation with a classic rule-based chatbot.</p>
-        <span class="open">Open ELIZA</span>
+        <h2>Chatbot Lab</h2>
+        <p>Chat with ELIZA, explore its rules, and compare with modern AI.</p>
+        <span class="open">Open Chatbot Lab</span>
       </a>
-      <a class="demo game" href="./ticTacToe/index.html">
+      <a class="demo game" href="./tic-tac-toe/index.html">
         <span class="icon" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M12 3v26M21 3v26M3 12h26M3 21h26M4 4l5 5M9 4 4 9M23 23l5 5M28 23l-5 5"/>
             <circle cx="16.5" cy="16.5" r="2.5"/>
           </svg>
         </span>
-        <h2>Tic-Tac-Toe</h2>
-        <p>Play the classic game of noughts and crosses.</p>
-        <span class="open">Open Tic-Tac-Toe</span>
-      </a>
-      <a class="demo comparison" href="./eliza/index.html#compare">
-        <span class="icon" aria-hidden="true">
-          <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M5 4h20a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H13l-7 5v-5H5a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3Z"/>
-            <path d="M15 27h11l7 5v-5h2a3 3 0 0 0 3-3V13a3 3 0 0 0-3-3h-2M9 11h12M9 16h8"/>
-          </svg>
-        </span>
-        <h2>ELIZA & Modern AI</h2>
-        <p>Send the same message to two generations of chatbots.</p>
-        <span class="open">Compare chatbots</span>
+        <h2>Tic-Tac-Toe Lab</h2>
+        <p>Play against different AI strategies and see how they choose their moves.</p>
+        <span class="open">Open Tic-Tac-Toe Lab</span>
       </a>
     </nav>
     <footer>CUHK-JC AI FOR THE FUTURE</footer>

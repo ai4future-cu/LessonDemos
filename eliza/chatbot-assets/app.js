@@ -8,6 +8,9 @@ const replyList = byId('reply-list');
 const addWordRow = byId('add-word').closest('li');
 const addRuleRow = byId('add-rule').closest('li');
 const addReplyRow = byId('add-reply').closest('li');
+const addWordButton = byId('add-word');
+const addRuleButton = byId('add-rule');
+const addReplyButton = byId('add-reply');
 const chatLog = byId('chat-log');
 const input = byId('chat-input');
 const defaultKeyword = 'COMPUTER';
@@ -242,6 +245,31 @@ function deleteButton(label, remove) {
   return button;
 }
 
+// Keep the existing add control and its listeners beside the last row's delete
+// control. An empty editable list keeps the standalone add control available.
+function placeAddControl(list, fallbackRow, button, enabled) {
+  const previousActions = button.closest('.row-actions');
+  const previousRow = previousActions?.parentElement;
+  if (list === wordList) fallbackRow.prepend(button);
+  else fallbackRow.append(button);
+  if (previousActions) {
+    previousRow.append(...previousActions.children);
+    previousActions.remove();
+    previousRow.classList.remove('has-add');
+  }
+  fallbackRow.hidden = !enabled;
+  if (!enabled || list === wordList) return;
+  const last = [...list.children].filter(row => row.classList.contains('editor-row')).at(-1);
+  if (!last) return;
+  const actions = element('div', undefined, 'row-actions');
+  const remove = last.querySelector('.delete-row');
+  if (remove) actions.append(remove);
+  actions.append(button);
+  last.append(actions);
+  last.classList.add('has-add');
+  fallbackRow.hidden = true;
+}
+
 function editableField(value, label, statusId, save, className = '', singleLine = false) {
   const field = element(singleLine ? 'input' : 'textarea', undefined, 'row-field ' + className);
   field.value = value;
@@ -285,7 +313,10 @@ function wordRow(keyword, words, index) {
   if (!word) field.placeholder = 'New word';
   row.append(field, deleteButton(word ? readable(word) : 'new word', () => {
     if (word) updateWords(words.filter((_, i) => i !== index));
-    else row.remove();
+    else {
+      row.remove();
+      placeAddControl(wordList, addWordRow, addWordButton, true);
+    }
   }));
   return row;
 }
@@ -340,6 +371,7 @@ function renderBoard(selection, animate = false, focusRule = false) {
   });
   wordList.replaceChildren(...words.map((word, index) => canEditGroup
     ? wordRow(selection.keyword, words, index) : element('li', readable(word))), addWordRow);
+  placeAddControl(wordList, addWordRow, addWordButton, canEditGroup);
   ruleList.replaceChildren();
   replyList.replaceChildren();
   let selectedRule;
@@ -384,6 +416,7 @@ function renderBoard(selection, animate = false, focusRule = false) {
   }
 
   ruleList.append(addRuleRow);
+  placeAddControl(ruleList, addRuleRow, addRuleButton, canEditGroup);
 
   const captures = byId('captured-content');
   captures.replaceChildren();
@@ -430,6 +463,7 @@ function renderBoard(selection, animate = false, focusRule = false) {
 
   replies.forEach((reply, index) => replyList.append(replyRow(replyEditor, reply, index)));
   replyList.append(addReplyRow);
+  placeAddControl(replyList, addReplyRow, addReplyButton, !!replyEditor);
   replyList.scrollTop = 0;
 
   if (selectedRule) {
@@ -768,6 +802,7 @@ byId('add-word').addEventListener('click', () => {
   }
   const row = wordRow(keyword, words, words.length);
   addWordRow.before(row);
+  placeAddControl(wordList, addWordRow, addWordButton, true);
   row.querySelector('.row-field').focus();
 });
 byId('restore-words').addEventListener('click', () => {
