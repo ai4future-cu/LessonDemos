@@ -6,69 +6,94 @@
   <meta name="description" content="Open the ELIZA chatbot and Tic-Tac-Toe classroom demos.">
   <title>AI Lesson Demos</title>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      padding: 80px 24px;
-      background: #f5f7fb;
-      color: #182338;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.6;
+    :root {
+      color-scheme: light;
+      color: #241e34;
+      background: #f5f2fa;
+      font: 100%/1.5 system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --ink: #241e34;
+      --accent: #4d2eb0;
+      --muted: #575167;
+      --gold: #ffc63e;
     }
-    main { width: 100%; max-width: 860px; margin: 0 auto; }
-    header { margin-bottom: 36px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; }
+    main { width: min(100% - 28px, 990px); margin: 40px auto; }
+    header { margin-bottom: 32px; text-align: center; }
     h1 {
       margin: 0 0 10px;
-      font-size: clamp(2rem, 5vw, 3rem);
-      line-height: 1.2;
-      letter-spacing: -0.04em;
+      color: var(--accent);
+      font: 700 clamp(2.65rem, 8vw, 3.8rem)/1.05 Georgia, serif;
+      text-shadow: 2px 3px #fff, 3px 5px #241e3426;
     }
-    header p { margin: 0; color: #526079; font-size: 1.125rem; }
-    .demos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+    header p { margin: 0; color: var(--muted); font-size: 1rem; }
+    .demos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
     .demo {
+      --card-background: #faf7ff;
+      --card-tint: #ede0fd;
+      --card-edge: #7251a6;
+      --card-ink: #4c2d80;
       display: flex;
       flex-direction: column;
       align-items: flex-start;
-      padding: 30px;
-      border: 1px solid #dce2ed;
-      border-radius: 18px;
-      background: #fff;
-      color: inherit;
+      min-width: 0;
+      padding: 28px;
+      border: 2px solid var(--card-edge);
+      border-radius: 17px;
+      background: var(--card-background);
+      box-shadow: 0 5px 0 var(--card-tint);
+      color: var(--ink);
       text-decoration: none;
-      transition: border-color 160ms, box-shadow 160ms;
+      transition: background-color 160ms, box-shadow 160ms;
     }
-    .demo:hover { border-color: #a2b4d0; box-shadow: 0 8px 24px #1823380d; }
-    .demo:focus-visible { outline: 3px solid #245ac7; outline-offset: 5px; }
+    .demo:hover { background: #f1ebfd; box-shadow: 0 5px 0 var(--card-edge); }
+    .demo:focus-visible { outline: 3px solid #168578; outline-offset: 5px; }
+    .game {
+      --card-background: #f4fbf7;
+      --card-tint: #d9f1e3;
+      --card-edge: #428467;
+      --card-ink: #245940;
+    }
+    .game:hover { background: #e8f6ee; }
     .icon {
       display: grid;
       place-items: center;
-      width: 56px;
-      height: 56px;
-      margin-bottom: 24px;
-      border-radius: 14px;
-      background: #eaf0ff;
-      color: #245ac7;
+      width: 88px;
+      height: 88px;
+      margin-bottom: 20px;
     }
-    .game .icon { background: #e6f5ef; color: #17735a; }
-    .icon svg { width: 30px; height: 30px; }
-    h2 { margin: 0 0 8px; font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.02em; }
-    .demo p { margin: 0 0 28px; color: #526079; font-size: 1rem; }
+    .icon img { display: block; width: 88px; height: auto; }
+    .game .icon {
+      width: 72px;
+      height: 72px;
+      margin: 8px 0 28px;
+      border: 2px solid var(--card-edge);
+      border-radius: 14px;
+      background: #d9f1e3;
+      box-shadow: 0 3px 0 #241e342b;
+      color: var(--card-ink);
+    }
+    .icon svg { width: 40px; height: 40px; }
+    h2 { margin: 0 0 8px; color: var(--card-ink); font-size: 1.5rem; font-weight: 800; line-height: 1.3; }
+    .demo p { margin: 0 0 28px; color: var(--muted); font-size: 1rem; }
     .open {
       margin-top: auto;
-      padding: 9px 16px;
-      border-radius: 8px;
-      background: #245ac7;
-      color: #fff;
+      padding: 8px 16px;
+      border: 2px solid var(--ink);
+      border-radius: 9px;
+      background: var(--gold);
+      box-shadow: 0 2px 0 #241e3455;
+      color: var(--ink);
       font-size: 1rem;
-      font-weight: 600;
+      font-weight: 800;
     }
-    .game .open { background: #17735a; }
+    .demo:hover .open { background: #ffd56a; }
+    footer { margin-top: 24px; color: var(--muted); font-size: .875rem; text-align: center; }
     @media (max-width: 600px) {
-      body { padding: 40px 20px; }
+      main { margin: 28px auto; }
       header { margin-bottom: 28px; }
       .demos { grid-template-columns: 1fr; gap: 20px; }
-      .demo { padding: 26px; }
+      .demo { padding: 24px; }
     }
     @media (prefers-reduced-motion: reduce) { .demo { transition: none; } }
   </style>
@@ -82,10 +107,7 @@
     <nav class="demos" aria-label="Classroom demos">
       <a class="demo" href="./eliza/index.html">
         <span class="icon" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M7 5h18a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H13l-7 5v-5a3 3 0 0 1-3-3V9a4 4 0 0 1 4-4Z"/>
-            <path d="M10 12h12M10 17h8"/>
-          </svg>
+          <img src="./eliza/chatbot-assets/chat-robot.png" alt="" width="112" height="106">
         </span>
         <h2>ELIZA</h2>
         <p>Try a conversation with a classic rule-based chatbot.</p>
@@ -103,6 +125,7 @@
         <span class="open">Open Tic-Tac-Toe</span>
       </a>
     </nav>
+    <footer>CUHK-JC AI FOR THE FUTURE</footer>
   </main>
 </body>
 </html>
