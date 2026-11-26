@@ -17,9 +17,9 @@ const explainedInput = byId('explained-input');
 const explainedControls = [explainedInput, byId('run-message')];
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const chatEngine = window.ElizaHay.make({matchOriginalWords:true, randomReplies:true});
+const chatEngine = window.ElizaHay.make({matchOriginalWords:true, randomReplies:false});
 const session = {
-  engine: window.ElizaHay.make({matchOriginalWords:true, randomReplies:true, orderKeywordsByPriority:true}),
+  engine: window.ElizaHay.make({matchOriginalWords:true, randomReplies:false, orderKeywordsByPriority:true}),
   groupNames: new Set(),
   wordDefaults: new Map(),
   deletedGroups: new Map()
@@ -324,7 +324,7 @@ function renderBoard(selection, animate = false, focusRule = false) {
   matches.replaceChildren();
   matches.hidden = !selection.matchingKeywords;
   if (selection.matchingKeywords?.length) {
-    matches.append('Matched keywords ', ...selection.matchingKeywords.map(({word, rank}) => {
+    matches.append('Found: ', ...selection.matchingKeywords.map(({word, rank}) => {
       const chosen = selection.inputKeyword === word;
       const label = '[' + rank + '] ' + readable(word) + (chosen ? ' · used' : '');
       const badge = element('span', label, chosen ? 'keyword-chip keyword-chosen' : 'keyword-chip');
@@ -416,16 +416,16 @@ function renderBoard(selection, animate = false, focusRule = false) {
   slots.replaceChildren();
   if (replyEditor) {
     const names = [...captureNames(replyEditor.rule).values()];
-    if (names.length) slots.append('Optional slots ', ...names.map(name => element('code', slotTag(name), 'pattern-capture')));
+    if (names.length) slots.append('Slots: ', ...names.map(name => element('code', slotTag(name), 'pattern-capture')));
   }
   const context = byId('reply-context');
   if (general) context.textContent = replies.length + (replies.length === 1 ? ' general reply' : ' general replies');
   else if (selection.kind === 'saved') context.textContent = 'Saved reply';
-  else if (triesNextKeyword) context.textContent = 'Tries the next keyword in the same message. If no other rule matches, it uses a general reply.';
+  else if (triesNextKeyword) context.textContent = 'Try the next keyword, or use a general reply.';
   else if (linkedGroup) context.textContent = replies.length + (replies.length === 1 ? ' reply' : ' replies') + ' from the ' + linkedGroup + ' rule group.';
-  else if (rule) context.textContent = replies.length + (replies.length === 1 ? ' reply' : ' replies') + ' for Rule ' + (selection.ruleIndex + 1);
+  else if (rule) context.textContent = '';
   else if (group && !group.transforms.length) context.textContent = 'Add a rule to see its replies.';
-  else context.textContent = 'Choose a rule to see its replies.';
+  else context.textContent = 'Select a rule.';
   if (!replies.length && destinations.length) context.textContent = destinations.join(' ');
 
   replies.forEach((reply, index) => replyList.append(replyRow(replyEditor, reply, index)));
@@ -490,7 +490,6 @@ async function runExplained() {
   status.textContent = '';
   explainedControls.forEach(control => { control.disabled = true; });
   try {
-    session.engine.clearConversation();
     const turn = await session.engine.trace(message);
     const reply = sentence(turn.output);
     renderBoard(selectionFor(turn, reply), true);
@@ -956,7 +955,7 @@ for (const [id, offset] of [['move-rule-up', -1], ['move-rule-down', 1]]) {
   });
 }
 
-function showTab(selected) {
+function showTab(selected, updateHash = true) {
   tabs.forEach(tab => {
     const active = tab === selected;
     tab.setAttribute('aria-selected', String(active));
@@ -969,7 +968,20 @@ function showTab(selected) {
     if (chosenRule) showInList(ruleList, chosenRule);
     if (chosenReply) showInList(replyList, chosenReply);
   }
+  if (updateHash) {
+    const hash = '#' + selected.id.replace(/-tab$/, '');
+    if (window.location.hash !== hash) {
+      try { window.history.replaceState(null, '', hash); }
+      catch { window.location.hash = hash; }
+    }
+  }
 }
+
+function showTabFromHash() {
+  const selected = tabs.find(tab => tab.id === window.location.hash.slice(1) + '-tab');
+  if (selected) showTab(selected, false);
+}
+window.addEventListener('hashchange', showTabFromHash);
 
 tabs.forEach((tab, index) => {
   tab.addEventListener('click', () => showTab(tab));
@@ -987,3 +999,4 @@ tabs.forEach((tab, index) => {
 loadGroups();
 for (const keyword of session.groupNames) session.wordDefaults.set(keyword, wordsForGroup(keyword));
 renderBoard({keyword:defaultKeyword, ruleIndex:0});
+showTabFromHash();

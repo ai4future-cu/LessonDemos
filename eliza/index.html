@@ -5,9 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Chat with ELIZA, then explore the keywords, rules, and reply templates behind its responses.">
   <title>Build Your Own Chatbot</title>
-  <link rel="stylesheet" href="chatbot-assets/style.css?v=flow-cards-1">
+  <link rel="stylesheet" href="chatbot-assets/style.css?v=chat-header-2">
+  <link rel="stylesheet" href="../compare/style.css?v=workshop-1">
   <script defer src="chatbot-assets/eliza-hay.js?v=keyword-order-1"></script>
-  <script defer src="chatbot-assets/app.js?v=flow-cards-1"></script>
+  <script defer src="chatbot-assets/app.js?v=workshop-1"></script>
+  <script defer src="../compare/config.js?v=workshop-1"></script>
+  <script defer src="../compare/system-prompt.js?v=classroom-1"></script>
+  <script defer src="../compare/api.js?v=classroom-1"></script>
+  <script defer src="../compare/app.js?v=classroom-1"></script>
 </head>
 <body>
   <main>
@@ -15,9 +20,10 @@
       <h1>Build Your Own Chatbot</h1>
       <p class="subtitle">Based on Joseph Weizenbaum’s ELIZA (1966)</p>
     </header>
-    <nav class="view-tabs" role="tablist" aria-label="ELIZA views">
+    <nav class="view-tabs" role="tablist" aria-label="Chatbot views">
       <button type="button" id="chat-tab" role="tab" aria-controls="chat-panel" aria-selected="true">Chat</button>
       <button type="button" id="explained-tab" role="tab" aria-controls="explained-panel" aria-selected="false" tabindex="-1">ELIZA Explained</button>
+      <button type="button" id="compare-tab" role="tab" aria-controls="compare-panel" aria-selected="false" tabindex="-1">Compare</button>
     </nav>
     <section class="chat" id="chat-panel" role="tabpanel" aria-labelledby="chat-tab">
       <img class="chat-mascot" src="chatbot-assets/chat-robot.png" alt="" width="112" height="106">
@@ -49,24 +55,24 @@
         </div>
         <p id="explained-status" class="editor-status" role="status"></p>
       </form>
-      <p class="save-hint" id="save-hint">Press Enter to save changes.</p>
+      <p class="save-hint" id="save-hint">Press Enter to save.</p>
       <div class="board" id="rule-board">
-        <section class="panel keyword-panel" aria-label="Keywords" aria-describedby="keyword-hint">
+        <section class="panel keyword-panel" aria-label="Keywords">
           <div class="keyword-controls">
             <div>
               <div class="panel-heading">
-                <label class="panel-title" for="keyword"><span class="step-number">1</span> Keyword</label>
+                <label class="panel-title" for="keyword"><span class="step-number">1</span> Find a keyword in the input</label>
                 <div class="group-actions">
                   <button type="button" id="new-group" class="add-button" aria-label="Add keyword group" title="Add keyword group" aria-controls="new-group-form" aria-expanded="false">+</button>
                   <button type="button" id="delete-group" class="delete-row" aria-label="Delete selected keyword group" title="Delete selected keyword group" disabled>−</button>
                 </div>
               </div>
-              <p class="panel-hint" id="keyword-hint">Find keywords in your message.</p>
-              <select id="keyword"></select>
-              <div class="keyword-priority" id="keyword-priority-control" hidden>
-                <label for="keyword-priority">Priority</label>
-                <input type="number" id="keyword-priority" min="0" step="1" aria-describedby="keyword-priority-hint">
-                <p id="keyword-priority-hint">Higher numbers are tried first. All words in this group share this number.</p>
+              <div class="keyword-selector">
+                <select id="keyword"></select>
+                <div class="keyword-priority" id="keyword-priority-control" hidden>
+                  <label for="keyword-priority">Priority</label>
+                  <input type="number" id="keyword-priority" min="0" step="1">
+                </div>
               </div>
               <form id="new-group-form" class="inline-editor" hidden>
                 <label for="new-group-name">Group name</label>
@@ -89,8 +95,7 @@
             </div>
             <div id="group-members">
               <div class="panel-heading">
-                <h2 class="keyword-label">Words</h2>
-                <button type="button" id="restore-words" class="edit-button" aria-label="Restore words">Restore</button>
+                <h2 class="keyword-label">Words in this group</h2>
               </div>
               <ul id="keyword-words" class="keyword-words" role="list">
                 <li class="add-row" hidden>
@@ -102,14 +107,13 @@
           </div>
           <p class="keyword-match" id="keyword-match" hidden></p>
           <p class="group-note" id="group-note"></p>
+          <button type="button" id="restore-words" class="edit-button restore-button" aria-label="Restore words">Restore</button>
         </section>
-        <section class="panel rules-panel" aria-labelledby="rules-title" aria-describedby="rule-hint">
+        <section class="panel rules-panel" aria-labelledby="rules-title">
           <div class="panel-heading">
-            <h2 class="panel-title" id="rules-title"><span class="step-number">2</span> Rules</h2>
-            <button type="button" id="restore-rules" class="edit-button" aria-label="Restore rules" hidden>Restore</button>
+            <h2 class="panel-title" id="rules-title"><span class="step-number">2</span> Find the first matching rule</h2>
           </div>
-          <p class="panel-hint" id="rule-hint">Try rules from top to bottom. The first match wins.</p>
-          <p class="pattern-key"><code>*</code> skip any words · <code>word</code> match exactly · <code>[a/b]</code> match either · <code>[slot 1]</code> save words for a reply</p>
+          <p class="pattern-key"><code>*</code> any words · <code>word</code> exact match · <code>[a/b]</code> either word · <code>[slot 1]</code> words to reuse</p>
           <ol class="rule-list" id="rule-list" role="list">
             <li class="add-row" hidden>
               <button type="button" id="add-rule" class="add-button" aria-label="Add rule" title="Add rule" aria-controls="add-rule-form" aria-expanded="false">+</button>
@@ -118,10 +122,10 @@
           <form id="add-rule-form" class="inline-editor" hidden>
             <label for="add-rule-pattern">Pattern</label>
             <input id="add-rule-pattern" type="text" class="pattern-input" placeholder="* computer *" aria-describedby="add-rule-pattern-hint" maxlength="180" required>
-            <p class="pattern-key" id="add-rule-pattern-hint">Write the words to match. Use <code>*</code> before or after them to allow extra words.</p>
+            <p class="pattern-key" id="add-rule-pattern-hint">Write a pattern. Use <code>*</code> for extra words.</p>
             <label for="add-rule-reply">Reply template</label>
             <input id="add-rule-reply" placeholder="What makes you say that?" aria-describedby="add-rule-reply-hint" maxlength="160" required>
-            <p class="pattern-key" id="add-rule-reply-hint">Write what ELIZA could say when this rule matches.</p>
+            <p class="pattern-key" id="add-rule-reply-hint">Reply when this rule matches.</p>
             <p class="pattern-key">New rules go to the top of this group.</p>
             <div id="add-rule-slots" class="available-slots"></div>
             <div class="rule-example"></div>
@@ -134,14 +138,13 @@
           </div>
           <dl id="capture-guide" class="capture-guide"></dl>
           <p id="editor-status" class="editor-status" role="status"></p>
+          <button type="button" id="restore-rules" class="edit-button restore-button" aria-label="Restore rules" hidden>Restore</button>
         </section>
-        <section class="panel replies-panel" aria-labelledby="replies-title" aria-describedby="reply-hint">
+        <section class="panel replies-panel" aria-labelledby="replies-title">
           <div class="panel-heading">
-            <h2 class="panel-title" id="replies-title"><span class="step-number">3</span> Replies</h2>
-            <button type="button" id="restore-replies" class="edit-button" aria-label="Restore replies" hidden>Restore</button>
+            <h2 class="panel-title" id="replies-title"><span class="step-number">3</span> Use the next reply and fill its slots</h2>
           </div>
-          <p class="panel-hint" id="reply-hint">Randomly pick a reply template and fill in any slots.</p>
-          <p class="reply-context" id="reply-context" role="status">Choose a rule to see its replies.</p>
+          <p class="reply-context" id="reply-context" role="status">Select a rule.</p>
           <p id="captured-content" class="matched-words" hidden></p>
           <div id="reply-slots" class="available-slots"></div>
           <ol class="reply-list" id="reply-list" role="list">
@@ -159,12 +162,97 @@
             </div>
           </form>
           <p id="replies-status" class="editor-status" role="status"></p>
+          <button type="button" id="restore-replies" class="edit-button restore-button" aria-label="Restore replies" hidden>Restore</button>
         </section>
       </div>
       <section class="flow-card output-card" aria-labelledby="output-title">
         <h2 id="output-title" class="flow-title">Output</h2>
         <output id="explained-output" for="explained-input" aria-labelledby="output-title">Run a message to see the reply.</output>
       </section>
+    </section>
+
+    <section id="compare-panel" role="tabpanel" aria-labelledby="compare-tab" hidden>
+      <details id="api-settings" class="api-settings">
+        <summary>API settings</summary>
+        <form id="api-settings-form" autocomplete="off">
+          <div class="api-fields">
+            <div class="api-field">
+              <label for="api-key">API key</label>
+              <input id="api-key" type="password" placeholder="Paste your API key" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            </div>
+            <div class="api-field">
+              <label for="api-model">Model</label>
+              <input id="api-model" type="text" value="deepseek-flash" placeholder="Enter the model ID" autocomplete="off" autocapitalize="off" spellcheck="false" required>
+            </div>
+          </div>
+          <details class="api-options">
+            <summary>API options</summary>
+            <div class="api-fields">
+              <div class="api-field">
+                <label for="api-base-url">API base URL</label>
+                <input id="api-base-url" type="url" value="https://api.deepseek.com" autocomplete="off" spellcheck="false" required>
+              </div>
+              <div class="api-field">
+                <label for="api-format">Format</label>
+                <select id="api-format">
+                  <option value="responses">Responses API</option>
+                  <option value="chat-completions" selected>Chat Completions API</option>
+                </select>
+              </div>
+            </div>
+          </details>
+          <div class="api-actions">
+            <p class="api-hint">Kept in this tab only. Refresh or clear the key when finished.</p>
+            <button type="button" id="clear-api" class="edit-button" disabled>Clear key</button>
+            <button type="submit" id="use-api" class="primary-button" disabled>Use this API</button>
+          </div>
+          <p id="api-settings-status" class="editor-status" role="status"></p>
+        </form>
+      </details>
+    <form id="compare-form" class="flow-card input-card">
+      <div class="input-heading">
+        <label class="flow-title" for="compare-input">Your message</label>
+        <button type="button" id="new-conversation" class="text-button">New conversation</button>
+      </div>
+      <div class="compose">
+        <input id="compare-input" type="text" placeholder="I feel happy." maxlength="2000" autocomplete="off" required>
+        <button type="submit" id="compare-send" class="primary-button">Send to both</button>
+      </div>
+      <div class="examples">
+        <button type="button" class="example" data-message="I feel happy.">I feel happy.</button>
+        <button type="button" class="example" data-message="I use a computer for homework.">I use a computer for homework.</button>
+      </div>
+      <p id="compare-status" class="status" role="status"></p>
+    </form>
+
+    <div class="conversations">
+      <section class="panel conversation" aria-labelledby="eliza-title">
+        <header class="conversation-heading">
+          <div>
+            <h2 id="eliza-title">ELIZA (1966)</h2>
+            <p class="conversation-description">Keywords, rules and reply templates</p>
+          </div>
+          <span class="connection" id="eliza-state">Ready</span>
+        </header>
+        <div id="eliza-log" class="chat-log" role="log" aria-label="Conversation with ELIZA" aria-relevant="additions">
+          <p class="empty-message">Send a message to start the conversation.</p>
+        </div>
+      </section>
+
+      <section class="panel conversation" aria-labelledby="modern-title">
+        <header class="conversation-heading">
+          <div>
+            <h2 id="modern-title">Modern chatbot (2026)</h2>
+            <p id="modern-model" class="conversation-description">Large language model</p>
+          </div>
+          <span class="connection" id="modern-state" role="status">Not connected</span>
+        </header>
+        <div id="modern-log" class="chat-log" role="log" aria-label="Conversation with the modern chatbot" aria-relevant="additions">
+          <p class="empty-message">The modern chatbot is not connected yet.</p>
+        </div>
+      </section>
+    </div>
+
     </section>
 
     <template id="pattern-reply-example">
@@ -177,7 +265,10 @@
     </template>
     <footer>
       <span>CUHK-JC AI FOR THE FUTURE</span>
-      <a href="https://findingeliza.org/how.html" target="_blank" rel="noopener noreferrer">Explore the original ELIZA</a>
+      <nav class="footer-links" aria-label="Related links">
+        <a href="../index.html">Back to home</a>
+        <a href="https://findingeliza.org/how.html" target="_blank" rel="noopener noreferrer">Explore the original ELIZA</a>
+      </nav>
     </footer>
   </main>
 </body>
