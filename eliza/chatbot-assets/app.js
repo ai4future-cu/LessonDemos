@@ -13,11 +13,16 @@ const addRuleButton = byId('add-rule');
 const addReplyButton = byId('add-reply');
 const chatLog = byId('chat-log');
 const input = byId('chat-input');
-const defaultKeyword = 'COMPUTER';
+const defaultKeyword = 'MY';
 const examples = [...document.querySelectorAll('[data-example]')];
 const chatControls = [input, byId('send'), ...examples];
 const explainedInput = byId('explained-input');
-const explainedControls = [explainedInput, byId('run-message')];
+const explainedExamples = [...document.querySelectorAll('[data-explained-example]')];
+const explainedControls = [explainedInput, byId('run-message'), ...explainedExamples];
+const aiRuleExample = {
+  pattern: byId('add-rule-pattern').placeholder,
+  reply: byId('add-rule-reply').placeholder
+};
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const chatEngine = window.ElizaHay.make({matchOriginalWords:true, randomReplies:false});
@@ -529,6 +534,7 @@ function renderBoard(selection, animate = false, focusRule = false) {
 async function sendChat(text) {
   const message = text.trim();
   if (!message || chatPending) return;
+  explainedInput.value = message;
   chatPending = true;
   const status = byId('chat-status');
   status.textContent = '';
@@ -814,7 +820,9 @@ editors.forEach(({button,form,field}) => {
     form.hidden = false;
     if (button.id === 'add-rule') {
       const word = wordsForGroup(boardSelection.keyword)[0] || boardSelection.keyword;
-      field.placeholder = '* ' + readable(word) + ' *';
+      const aiGroup = boardSelection.keyword === 'AI';
+      field.placeholder = aiGroup ? aiRuleExample.pattern : '* ' + readable(word) + ' *';
+      byId('add-rule-reply').placeholder = aiGroup ? aiRuleExample.reply : 'What makes you say that?';
     }
     if (button.id === 'add-reply') {
       form.reset();
@@ -985,6 +993,21 @@ byId('clear-chat').addEventListener('click', () => {
   input.focus({preventScroll:true});
 });
 
+function fillExampleInput(field, text) {
+  if (pending || field.disabled) return;
+  field.value = text;
+  field.dispatchEvent(new Event('input', {bubbles:true}));
+  field.focus({preventScroll:true});
+  field.setSelectionRange(field.value.length, field.value.length);
+}
+
+document.querySelectorAll('input[data-fill-example]').forEach(field => {
+  field.addEventListener('dblclick', () => fillExampleInput(field, field.placeholder));
+});
+explainedExamples.forEach(button => {
+  button.addEventListener('click', () => fillExampleInput(explainedInput, button.dataset.explainedExample));
+});
+
 byId('explained-form').addEventListener('submit', event => {
   event.preventDefault();
   runExplained();
@@ -1070,5 +1093,5 @@ tabs.forEach((tab, index) => {
 
 loadGroups();
 for (const keyword of session.groupNames) session.wordDefaults.set(keyword, wordsForGroup(keyword));
-renderBoard({keyword:defaultKeyword, ruleIndex:0});
+renderBoard({keyword:defaultKeyword, ruleIndex:1});
 showTabFromHash();

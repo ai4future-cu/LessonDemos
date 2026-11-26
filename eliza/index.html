@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore Joseph Weizenbaum’s ELIZA and today’s chatbots. Chat, explore ELIZA’s rules, and compare replies.">
   <title>Chatbot Lab</title>
-  <link rel="stylesheet" href="chatbot-assets/style.css?v=compact-hints-1">
-  <link rel="stylesheet" href="../compare/style.css?v=reflection-emphasis-1">
+  <link rel="stylesheet" href="chatbot-assets/style.css?v=classroom-opening-1">
+  <link rel="stylesheet" href="../compare/style.css?v=reflect-card-1">
   <script defer src="chatbot-assets/eliza-hay.js?v=post-match-substitutions-1"></script>
-  <script defer src="chatbot-assets/app.js?v=compact-hints-1"></script>
+  <script defer src="chatbot-assets/app.js?v=classroom-opening-1"></script>
   <script defer src="../compare/config.js?v=workshop-1"></script>
   <script defer src="../compare/system-prompt.js?v=classroom-1"></script>
   <script defer src="../compare/api.js?v=classroom-1"></script>
@@ -34,12 +34,12 @@
       <div id="chat-log" class="chat-log" role="log" aria-label="Conversation" aria-relevant="additions"></div>
       <form id="chat-form" class="chat-form">
         <div class="examples">
-          <button type="button" class="example" data-example="I feel worried about tomorrow’s exam.">I feel worried about tomorrow’s exam.</button>
-          <button type="button" class="example" data-example="I use a computer for homework.">I use a <strong>computer</strong> for homework.</button>
+          <button type="button" class="example" data-example="Adults are all alike.">Adults are all alike.</button>
+          <button type="button" class="example" data-example="They always tell me what to do.">They always tell me what to do.</button>
         </div>
         <label class="visually-hidden" for="chat-input">Your message</label>
         <div class="compose">
-          <input id="chat-input" type="text" placeholder="I feel worried about tomorrow’s exam." maxlength="240" autocomplete="off" required>
+          <input id="chat-input" type="text" placeholder="Adults are all alike." data-fill-example maxlength="240" autocomplete="off" required>
           <button type="submit" id="send">Send</button>
         </div>
         <p class="status" id="chat-status" role="status"></p>
@@ -50,8 +50,12 @@
       <form id="explained-form" class="flow-card input-card">
         <label class="flow-title" for="explained-input">Input</label>
         <div class="compose">
-          <input id="explained-input" type="text" placeholder="I feel worried about tomorrow’s exam." maxlength="240" autocomplete="off" required>
+          <input id="explained-input" type="text" placeholder="I think my exams are making me nervous." data-fill-example maxlength="240" autocomplete="off" required>
           <button type="submit" id="run-message" class="primary-button">Run</button>
+        </div>
+        <div class="examples explained-examples">
+          <button type="button" class="example" data-explained-example="Which AI is the best AI?">Which AI is the best AI?</button>
+          <button type="button" class="example" data-explained-example="Can AI help me prepare for my exam?">Can AI help me prepare for my exam?</button>
         </div>
         <p id="explained-status" class="editor-status" role="status"></p>
       </form>
@@ -75,13 +79,13 @@
               </div>
               <form id="new-group-form" class="inline-editor" hidden>
                 <label for="new-group-name">Group name</label>
-                <input id="new-group-name" placeholder="AI" maxlength="28" required>
+                <input id="new-group-name" placeholder="AI" data-fill-example maxlength="28" required>
                 <label for="new-group-words">Words</label>
-                <input id="new-group-words" placeholder="AI, ChatGPT" maxlength="180" required>
+                <input id="new-group-words" placeholder="AI, ChatGPT, DeepSeek" data-fill-example maxlength="180" required>
                 <label for="new-group-pattern">First rule pattern</label>
-                <input id="new-group-pattern" class="pattern-input" value="*" maxlength="180" required>
+                <input id="new-group-pattern" class="pattern-input" value="*" placeholder="*" data-fill-example maxlength="180" required>
                 <label for="new-group-reply">First reply</label>
-                <input id="new-group-reply" placeholder="What do you use AI for?" maxlength="160" required>
+                <input id="new-group-reply" placeholder="What do you use AI for?" data-fill-example maxlength="160" required>
                 <div id="new-group-slots" class="available-slots"></div>
                 <div class="rule-example"></div>
                 <button type="submit" class="edit-button">Add group</button>
@@ -112,7 +116,30 @@
           <div class="panel-heading">
             <h2 class="panel-title" id="rules-title"><span class="step-number">2</span> Find the first matching rule</h2>
           </div>
-          <p class="pattern-key"><code>*</code> any words · <code>word</code> exact match · <code>[a/b]</code> either word · <code>[slot 1]</code> words to reuse</p>
+          <details class="pattern-guide" id="pattern-guide">
+            <summary>How does a rule match?</summary>
+            <div class="pattern-guide-content">
+              <p class="pattern-guide-input">Input: <strong>I think my exams are making me nervous.</strong></p>
+              <p>This pattern is in the <strong>My</strong> group. Line up each part with the input:</p>
+              <table class="pattern-guide-example" aria-label="My rule matching example">
+                <thead>
+                  <tr><th scope="col"><code>*</code></th><th scope="col"><code>my</code></th><th scope="col"><code>[slot 1]</code></th></tr>
+                </thead>
+                <tbody>
+                  <tr class="pattern-guide-words"><td>I think</td><td>my</td><td><mark>exams are making me nervous</mark></td></tr>
+                  <tr class="pattern-guide-meanings"><td>Any words<br>(or none)</td><td>Must match</td><td>Keep for the reply</td></tr>
+                </tbody>
+              </table>
+              <p><code>[slot 1]</code> keeps <strong>exams are making me nervous</strong>.</p>
+              <p>Step 3 changes <code>me</code> to <code>you</code> before filling the reply.</p>
+              <p class="pattern-guide-reply">Reply: “Your <mark>exams are making you nervous</mark>.”</p>
+              <p class="pattern-guide-miss"><strong>Does not match:</strong> “I think exams are making me nervous.”<br>This rule needs the word <code>my</code>.</p>
+              <details class="pattern-guide-reference">
+                <summary>More pattern symbols</summary>
+                <p class="pattern-key"><code>*</code> any words · <code>word</code> exact match · <code>[a/b]</code> either word · <code>[slot 1]</code> words to reuse</p>
+              </details>
+            </div>
+          </details>
           <ol class="rule-list" id="rule-list" role="list">
             <li class="add-row" hidden>
               <button type="button" id="add-rule" class="add-button" aria-label="Add rule" title="Add rule" aria-controls="add-rule-form" aria-expanded="false">+</button>
@@ -120,10 +147,10 @@
           </ol>
           <form id="add-rule-form" class="inline-editor" hidden>
             <label for="add-rule-pattern">Pattern</label>
-            <input id="add-rule-pattern" type="text" class="pattern-input" placeholder="* computer *" aria-describedby="add-rule-pattern-hint" maxlength="180" required>
+            <input id="add-rule-pattern" type="text" class="pattern-input" placeholder="* can [AI/ChatGPT/DeepSeek] help me [slot 1]" data-fill-example aria-describedby="add-rule-pattern-hint" maxlength="180" required>
             <p class="pattern-key" id="add-rule-pattern-hint">Write a pattern. Use <code>*</code> for extra words.</p>
             <label for="add-rule-reply">Reply template</label>
-            <input id="add-rule-reply" placeholder="What makes you say that?" aria-describedby="add-rule-reply-hint" maxlength="160" required>
+            <input id="add-rule-reply" placeholder="How would you like AI to help you [slot 1]?" data-fill-example aria-describedby="add-rule-reply-hint" maxlength="160" required>
             <p class="pattern-key" id="add-rule-reply-hint">Reply when this rule matches.</p>
             <p class="pattern-key">New rules go to the top of this group.</p>
             <div id="add-rule-slots" class="available-slots"></div>
@@ -182,7 +209,7 @@
         <h2 id="output-title" class="flow-title">Output</h2>
         <output id="explained-output" for="explained-input" aria-labelledby="output-title">Run a message to see the reply.</output>
       </section>
-      <p class="lab-challenge"><strong>Challenge:</strong> Can you make ELIZA talk about AI?</p>
+      <p class="lab-challenge"><strong>Challenge:</strong> Can you enable ELIZA to discuss AI?</p>
     </section>
 
     <section id="compare-panel" role="tabpanel" aria-labelledby="compare-tab" hidden>
@@ -206,6 +233,7 @@
       <div class="examples">
         <button type="button" class="example" data-message="I’m worried about tomorrow’s exam.">I’m worried about tomorrow’s exam.</button>
         <button type="button" class="example" data-message="Can you help me make a study plan for tomorrow’s exam?">Can you help me make a study plan for tomorrow’s exam?</button>
+        <button type="button" class="example" data-message="What exact questions will be on my science exam tomorrow?">What exact questions will be on my science exam tomorrow?</button>
       </div>
       <p id="compare-status" class="status" role="status"></p>
     </form>
@@ -242,7 +270,15 @@
       </section>
     </div>
 
-      <p class="comparison-reflection"><strong>Think:</strong> How do their replies differ, and why?</p>
+      <section class="panel comparison-reflection" aria-labelledby="comparison-reflect-title">
+        <h2 id="comparison-reflect-title">Reflect</h2>
+        <ol>
+          <li>How are their replies different?</li>
+          <li>Why do they respond differently?</li>
+          <li>Based on what we have learned, how should we use modern chatbots responsibly?</li>
+        </ol>
+        <p class="comparison-tips"><strong>Tips:</strong> AI can make mistakes. Check important information, protect your privacy, and use AI with your teacher’s guidance.</p>
+      </section>
       <details id="api-settings" class="api-settings">
         <summary>API settings</summary>
         <form id="api-settings-form" autocomplete="off">
@@ -286,9 +322,10 @@
     <template id="pattern-reply-example">
       <details class="pattern-key">
         <summary>Pattern and reply example</summary>
-        <p><strong>Pattern</strong> <code>* AI [slot 1] bad [slot 2]</code></p>
-        <p><strong>Reply</strong> <code>Why do you think AI [slot 1] bad [slot 2]?</code></p>
-        <p>For “I think AI is bad for homework”, <code>[slot 1]</code> takes <strong>“is”</strong> and <code>[slot 2]</code> takes <strong>“for homework”</strong>.</p>
+        <p><strong>Input</strong> Can AI help me prepare for my exam?</p>
+        <p><strong>Pattern</strong> <code>* can [AI/ChatGPT/DeepSeek] help me [slot 1]</code></p>
+        <p><strong>Reply template</strong> <code>How would you like AI to help you [slot 1]?</code></p>
+        <p><code>[slot 1]</code> keeps <strong>prepare for my exam</strong>. Step 3 changes <code>my</code> to <code>your</code> for the reply.</p>
       </details>
     </template>
     <footer>

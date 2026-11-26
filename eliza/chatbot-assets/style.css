@@ -79,6 +79,7 @@ button:disabled { cursor: default; opacity: .6; }
 .flow-title { display: block; margin-bottom: 10px; font-size: 1.4rem; font-weight: 850; line-height: 1.25; }
 .input-card, .output-card { border-color: var(--accent); background: var(--purple); }
 .input-card input { min-height: 48px; padding-inline: 12px; border-color: var(--accent); color: var(--ink); }
+.input-card .explained-examples { margin: 10px 0 0; }
 .input-card :focus-visible { outline-color: #fff; }
 .input-card .editor-status.error { color: #ffe2df; }
 .output-card { margin-top: 16px; }
@@ -109,7 +110,7 @@ button:disabled { cursor: default; opacity: .6; }
 .substitution-example { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0 14px; color: var(--muted); font-size: .9rem; font-weight: 500; }
 .substitution-example > span:not(:first-child) { white-space: nowrap; }
 .substitution-example mark { padding: 0 2px; border-radius: 3px; color: var(--panel-ink); background: var(--gold-soft); font-weight: 750; }
-.lab-challenge { max-width: 38rem; margin: 24px auto 0; color: var(--ink); text-align: center; text-wrap: balance; font-size: clamp(1.2rem, 3.2vw, 1.6rem); font-weight: 800; line-height: 1.4; }
+.lab-challenge { max-width: 38rem; margin: 40px auto; color: var(--ink); text-align: center; text-wrap: balance; font-size: clamp(1.2rem, 3.2vw, 1.6rem); font-weight: 800; line-height: 1.4; }
 .lab-challenge strong { color: var(--accent); font-weight: 900; }
 .substitution-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
 .substitution-table th { padding: 0 8px 6px; text-align: left; color: var(--muted); font-size: .875rem; font-weight: 650; }
@@ -171,6 +172,25 @@ button:disabled { cursor: default; opacity: .6; }
 .add-button { display: grid; place-items: center; width: 31px; min-height: 30px; padding: 0; border: 1px solid var(--panel-line); border-radius: 6px; color: var(--panel-ink); background: var(--panel-tint); box-shadow: 0 2px 0 var(--panel-line); font-size: 1.0625rem; font-weight: 800; }
 .pattern-key { color: var(--muted); font-size: .875rem; margin: 2px 0; }
 .pattern-key code { font-weight: 700; color: var(--panel-ink); }
+.pattern-guide { margin: 8px 0 12px; padding: 9px 12px; border: 1px solid var(--panel-line); border-radius: 10px; background: var(--surface); font-size: 1rem; }
+.pattern-guide summary { cursor: pointer; color: var(--panel-ink); font-weight: 650; }
+.pattern-guide > summary { padding-block: 2px; }
+.pattern-guide-content { display: grid; gap: 10px; padding-top: 12px; }
+.pattern-guide-content > p { line-height: 1.5; }
+.pattern-guide code { color: var(--panel-ink); font-weight: 700; }
+.pattern-guide-example { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 4px 6px; }
+.pattern-guide-input { color: var(--muted); }
+.pattern-guide-example th { padding: 5px 3px; border: 1px solid var(--panel-line); border-radius: 7px; background: var(--panel-tint); font-weight: 700; }
+.pattern-guide-example th code { font-size: .9375rem; }
+.pattern-guide-example td { padding: 2px 3px; text-align: center; vertical-align: top; overflow-wrap: anywhere; }
+.pattern-guide-words { font-weight: 650; }
+.pattern-guide-meanings { color: var(--muted); font-size: .875rem; line-height: 1.4; }
+.pattern-guide mark { padding: 1px 4px; border-radius: 4px; color: var(--ink); background: var(--gold-soft); font-weight: 750; }
+.pattern-guide-reply { font-weight: 650; }
+.pattern-guide-miss { padding-top: 10px; border-top: 1px solid var(--panel-line); color: var(--muted); }
+.pattern-guide-reference { font-size: .875rem; }
+.pattern-guide-reference summary { font-weight: 550; }
+.pattern-guide-reference .pattern-key { margin-top: 6px; }
 .inline-editor { display: grid; gap: 4px; margin: 6px 0 8px; padding: 7px; border: 1px solid var(--panel-line); border-radius: 6px; background: var(--surface); }
 .inline-editor label { display: block; font-size: .875rem; font-weight: 700; }
 .inline-editor input, .inline-editor select { width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid var(--panel-line); border-radius: 5px; background: var(--surface); }
