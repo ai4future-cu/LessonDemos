@@ -1,0 +1,30 @@
+{
+  "config": {
+    "mode": "priority",
+    "rules": [
+      "finish my line",
+      "block their line",
+      "take the center",
+      "take a corner",
+      "take an edge"
+    ]
+  },
+  "method": "heuristics",
+  "scorecard": {
+    "Greedy": {
+      "draw": 40,
+      "loss": 0,
+      "win": 0
+    },
+    "Minimax": {
+      "draw": 40,
+      "loss": 0,
+      "win": 0
+    },
+    "Randomo": {
+      "draw": 5,
+      "loss": 0,
+      "win": 35
+    }
+  }
+}
