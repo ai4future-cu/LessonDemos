@@ -342,20 +342,32 @@ function match(tags, p, w) {
 
 // return words constructed from given reassemblyRule and components
 // e.g. reassemble([ARE, YOU, 1], [MAD, ABOUT YOU]) -> [ARE, YOU, MAD]
-function reassemble(reassemblyRule, components) {
+function reassemble(reassemblyRule, components, substitutions = null, reusedParts = null) {
     console.assert(Array.isArray(reassemblyRule));
     console.assert(Array.isArray(components));
     let result = [];
+    let quoted = false;
     for (let r of reassemblyRule) {
         let n = toInt(r);
         if (n < 0) {
             result.push(r);
+            if (r === '“') quoted = true;
+            else if (r === '”') quoted = false;
+            else if (r === '"') quoted = !quoted;
         } else if (n === 0 || n > components.length) {
             // index out of range should never happen because indexes
             // are checked when the script is processed
             result.push("HMMM");
         } else {
-            let expanded = split(components[n - 1]);
+            const tokens = split(components[n - 1]).map(word => ({
+                from: word,
+                // One pass over captured words, never over the reply template.
+                to: substitutions && !quoted ? substitutions.get(word) || word : word
+            }));
+            let expanded = tokens.map(token => token.to);
+            if (reusedParts && tokens.length) reusedParts.push({
+                component: n, before: components[n - 1], after: join(expanded), quoted, tokens
+            });
             result = result.concat(expanded);
         }
     }
@@ -481,6 +493,7 @@ class RuleKeyword {
         return this.transforms.length > 0 || !!this.linkKeyword;
     }
     applyTransformation(words, tags, randomReplies = false) {
+        this.lastReassembly = null;
         this.trace =
             TRACE_PREFIX + 'selected keyword: ' + this.keyword + '\n' +
             TRACE_PREFIX + 'input: ' + join(words) + '\n';
@@ -559,7 +572,9 @@ class RuleKeyword {
             return [ACTION_LINKKEY, words, link];
         }
 
-        words = reassemble(reassemblyRule, constituents);
+        const reusedParts = this.captureSubstitutions ? [] : null;
+        words = reassemble(reassemblyRule, constituents, this.captureSubstitutions, reusedParts);
+        this.lastReassembly = { output: join(words), reusedParts };
         return [ACTION_COMPLETE, words];
     }
     toString() {
@@ -636,7 +651,7 @@ class RuleMemory {
             this.trace += ") does not match user text\n";
             return;
         }
-        const newMemory = join(reassemble(transformation.reassemblyRules[0], constituents));
+        const newMemory = join(reassemble(transformation.reassemblyRules[0], constituents, this.captureSubstitutions));
         this.trace += TRACE_PREFIX + "new memory: " + newMemory + '\n';
         this.memories.push(newMemory);
     }
@@ -2111,7 +2126,11 @@ class HayTrace extends nullTracer {
               if (index === used) selectedReply = replyOptions.length;
             });
           }
-          this.steps.push({ kind: 'reassemble', keyword: keyword, inputKeyword: this.inputKeyword, ruleIndex: ruleIndex, template: toks, components: parts, output: fillTemplate(toks, parts), replyOptions: replyOptions, selectedReply: selectedReply });
+          const reassembled = group?.lastReassembly;
+          if (reassembled?.reusedParts) {
+            this.steps.push({ kind: 'substitute', keyword: keyword, parts: reassembled.reusedParts });
+          }
+          this.steps.push({ kind: 'reassemble', keyword: keyword, inputKeyword: this.inputKeyword, ruleIndex: ruleIndex, template: toks, components: parts, output: reassembled?.output ?? fillTemplate(toks, parts), replyOptions: replyOptions, selectedReply: selectedReply });
         }
       }
     } else if (equiv) {
@@ -2197,6 +2216,12 @@ function buildConversationScript(groups) {
 }
 
 function useClassroomWording(script) {
+  // Match the original input first. Apply DOCTOR's substitutions only when a
+  // captured fragment is reused in a reply or saved memory.
+  script.captureSubstitutions = new Map([...script.rules.values()]
+    .filter(group => group.wordSubstitution)
+    .map(group => [group.keyword, group.wordSubstitution]));
+  script.memoryRule.captureSubstitutions = script.captureSubstitutions;
   const originalWords = new Map([
     ['YOU', 'I'], ['I', 'YOU'], ['YOUR', 'MY'], ['MY', 'YOUR'],
     ['WAS', '(* WAS WERE)'], ['DREAMT', '(* DREAMT DREAMED)'],
@@ -2204,6 +2229,7 @@ function useClassroomWording(script) {
   ]);
   const rules = keyword => script.rules.get(keyword).transforms;
   script.rules.forEach((group, keyword) => {
+    group.captureSubstitutions = script.captureSubstitutions;
     group.wordSubstitution = '';
     group.transforms.forEach(rule => {
       rule.decomposition = rule.decomposition.map((word, index, parts) => {
@@ -2222,7 +2248,8 @@ function useClassroomWording(script) {
   youRules[0].decomposition[3] = 'ME';
   youRules[2].decomposition[3] = 'ME';
 
-  // A full clause can be quoted as written. Fixed pronouns still belong to the reply template.
+  // A full clause can be quoted as written. Reassembly preserves captured words
+  // inside quotation marks; fixed pronouns still belong to the reply template.
   iRules[11].reassemblyRules[0] = ['YOU', 'SAID', '“', '1', '”', '.'];
   iRules[11].reassemblyRules[2] = ['WHAT', 'MAKES', 'YOU', 'SAY', '“', '1', '”', '?'];
   youRules[3].reassemblyRules[1] = ['WHAT', 'MAKES', 'YOU', 'SAY', 'THAT', '?'];
@@ -2412,6 +2439,7 @@ window.ElizaHay = {
         var newGroup = !group;
         if (!group) {
           group = new RuleKeyword(keyword, '', 20);
+          group.captureSubstitutions = script.captureSubstitutions;
           script.rules.set(keyword, group);
         }
         var rule = new Transform(pattern.slice(), [reply.slice()]);

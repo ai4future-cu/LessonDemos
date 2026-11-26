@@ -209,12 +209,13 @@ function browsingOptions(rule, visited = new Set()) {
 }
 
 function selectionFor(turn, reply) {
+  const substitution = turn.steps.findLast(event => event.kind === 'substitute') || null;
   const matchingKeywords = [...new Map(turn.keystack.map(entry => [entry.word, entry])).values()];
   const match = turn.steps.findLast(event => event.kind === 'decompose');
   const build = turn.steps.findLast(event => event.kind === 'reassemble');
   if (!match || !build) {
     const saved = turn.steps.some(event => event.kind === 'memory-recall');
-    return {keyword:'', ruleIndex:null, usedReply:0, matchingKeywords, replies:[reply], kind:saved ? 'saved' : 'general'};
+    return {keyword:'', ruleIndex:null, usedReply:0, matchingKeywords, replies:[reply], substitution, kind:saved ? 'saved' : 'general'};
   }
 
   const fallback = turn.steps.some(event => event.kind === 'none');
@@ -226,9 +227,44 @@ function selectionFor(turn, reply) {
   const rule = group.transforms[ruleIndex];
   const names = captureNames(rule);
   const replies = build.replyOptions.map(option => formatTemplate(option, null, names, ruleTerms(rule)));
-  const captures = [...names].map(([slot, name]) => [name, build.components[Number(slot) - 1] || '']);
+  const substitutedParts = new Map((substitution?.parts || []).map(part => [part.component, part.after]));
+  const captures = [...names].map(([slot, name]) => [name,
+    substitutedParts.get(Number(slot)) ?? build.components[Number(slot) - 1] ?? '']);
   return {keyword:group.keyword, group, inputKeyword, passedKeyword, words:wordsForGroup(group.keyword), ruleIndex, captures,
-    usedReply, matchingKeywords, replies, kind:fallback ? 'general' : 'rule'};
+    usedReply, matchingKeywords, replies, substitution, kind:fallback ? 'general' : 'rule'};
+}
+
+function renderSubstitutions(substitution) {
+  const status = byId('substitution-status');
+  const table = byId('substitution-table');
+  const rows = byId('substitution-rows');
+  rows.replaceChildren();
+  const unique = new Set();
+  const parts = (substitution?.parts || []).filter(part => {
+    const key = JSON.stringify([part.component, part.before, part.after, part.quoted]);
+    if (unique.has(key)) return false;
+    unique.add(key);
+    return true;
+  });
+  table.hidden = !parts.length;
+  if (substitution === undefined) status.textContent = '';
+  else if (!parts.length) status.textContent = 'No words to substitute for this reply.';
+  else if (parts.some(part => part.tokens.some(token => token.from !== token.to))) status.textContent = '';
+  else status.textContent = parts.some(part => part.quoted)
+    ? 'Quoted words stay unchanged.' : 'No word substitutions needed.';
+  for (const part of parts) {
+    const row = element('tr');
+    for (const side of ['from', 'to']) {
+      const cell = element('td');
+      part.tokens.forEach((token, index) => {
+        if (index) cell.append(' ');
+        cell.append(token.from !== token.to
+          ? element('mark', readable(token[side])) : document.createTextNode(readable(token[side])));
+      });
+      row.append(cell);
+    }
+    rows.append(row);
+  }
 }
 
 function showInList(list, row) {
@@ -277,7 +313,7 @@ function editableField(value, label, statusId, save, className = '', singleLine 
   field.spellcheck = false;
   if (!singleLine) field.rows = 1;
   field.setAttribute('aria-label', label);
-  field.setAttribute('aria-describedby', 'save-hint ' + statusId);
+  field.setAttribute('aria-describedby', statusId);
   field.addEventListener('input', () => {
     if (field.getAttribute('aria-invalid') === 'true') {
       field.removeAttribute('aria-invalid');
@@ -322,6 +358,7 @@ function wordRow(keyword, words, index) {
 }
 
 function renderBoard(selection, animate = false, focusRule = false) {
+  renderSubstitutions(selection.substitution);
   window.clearTimeout(animationTimer);
   boardSelection = selection;
   closeEditors();
@@ -422,7 +459,7 @@ function renderBoard(selection, animate = false, focusRule = false) {
   captures.replaceChildren();
   captures.hidden = !selection.captures?.length;
   if (!captures.hidden) {
-    captures.append(element('strong', 'Matched words: '));
+    captures.append(element('strong', 'Words for the reply: '));
     selection.captures.forEach(([name, words], index) => {
       if (index) captures.append(' · ');
       captures.append(element('code', slotTag(name), 'pattern-capture'), ' = ', words ? readable(words) : '(empty)');

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore Joseph Weizenbaum’s ELIZA and today’s chatbots. Chat, explore ELIZA’s rules, and compare replies.">
   <title>Chatbot Lab</title>
-  <link rel="stylesheet" href="chatbot-assets/style.css?v=lab-heading-1">
-  <link rel="stylesheet" href="../compare/style.css?v=compare-layout-2">
-  <script defer src="chatbot-assets/eliza-hay.js?v=keyword-order-1"></script>
-  <script defer src="chatbot-assets/app.js?v=compact-controls-1"></script>
+  <link rel="stylesheet" href="chatbot-assets/style.css?v=compact-hints-1">
+  <link rel="stylesheet" href="../compare/style.css?v=reflection-emphasis-1">
+  <script defer src="chatbot-assets/eliza-hay.js?v=post-match-substitutions-1"></script>
+  <script defer src="chatbot-assets/app.js?v=compact-hints-1"></script>
   <script defer src="../compare/config.js?v=workshop-1"></script>
   <script defer src="../compare/system-prompt.js?v=classroom-1"></script>
   <script defer src="../compare/api.js?v=classroom-1"></script>
@@ -34,12 +34,12 @@
       <div id="chat-log" class="chat-log" role="log" aria-label="Conversation" aria-relevant="additions"></div>
       <form id="chat-form" class="chat-form">
         <div class="examples">
-          <button type="button" class="example" data-example="I feel happy.">I feel happy.</button>
+          <button type="button" class="example" data-example="I feel worried about tomorrow’s exam.">I feel worried about tomorrow’s exam.</button>
           <button type="button" class="example" data-example="I use a computer for homework.">I use a <strong>computer</strong> for homework.</button>
         </div>
         <label class="visually-hidden" for="chat-input">Your message</label>
         <div class="compose">
-          <input id="chat-input" type="text" placeholder="I feel happy." maxlength="240" autocomplete="off" required>
+          <input id="chat-input" type="text" placeholder="I feel worried about tomorrow’s exam." maxlength="240" autocomplete="off" required>
           <button type="submit" id="send">Send</button>
         </div>
         <p class="status" id="chat-status" role="status"></p>
@@ -50,12 +50,11 @@
       <form id="explained-form" class="flow-card input-card">
         <label class="flow-title" for="explained-input">Input</label>
         <div class="compose">
-          <input id="explained-input" type="text" placeholder="I feel happy." maxlength="240" autocomplete="off" required>
+          <input id="explained-input" type="text" placeholder="I feel worried about tomorrow’s exam." maxlength="240" autocomplete="off" required>
           <button type="submit" id="run-message" class="primary-button">Run</button>
         </div>
         <p id="explained-status" class="editor-status" role="status"></p>
       </form>
-      <p class="save-hint" id="save-hint">Press Enter to save.</p>
       <div class="board" id="rule-board">
         <section class="panel keyword-panel" aria-label="Keywords">
           <div class="keyword-controls">
@@ -142,9 +141,21 @@
           </div>
           <p id="editor-status" class="editor-status" role="status"></p>
         </section>
+        <section class="panel substitution-panel" aria-labelledby="substitution-title">
+          <div class="panel-heading">
+            <h2 class="panel-title" id="substitution-title"><span class="step-number">3</span> Substitute pronouns for the reply</h2>
+          </div>
+          <p class="substitution-description">Each slot holds words matched by a rule.</p>
+          <p class="substitution-example"><span>Example:</span> <span><mark>my</mark> friend helps <mark>me</mark></span> <span>→</span> <span><mark>your</mark> friend helps <mark>you</mark></span></p>
+          <p id="substitution-status" class="substitution-status"></p>
+          <table id="substitution-table" class="substitution-table" hidden>
+            <thead><tr><th scope="col">Slot text (before)</th><th scope="col">Slot text (after)</th></tr></thead>
+            <tbody id="substitution-rows"></tbody>
+          </table>
+        </section>
         <section class="panel replies-panel" aria-labelledby="replies-title">
           <div class="panel-heading">
-            <h2 class="panel-title" id="replies-title"><span class="step-number">3</span> Use the next reply and fill its slots</h2>
+            <h2 class="panel-title" id="replies-title"><span class="step-number">4</span> Use the next reply and fill its slots</h2>
           </div>
           <p class="reply-context" id="reply-context" role="status">Select a rule.</p>
           <p id="captured-content" class="matched-words" hidden></p>
@@ -171,6 +182,7 @@
         <h2 id="output-title" class="flow-title">Output</h2>
         <output id="explained-output" for="explained-input" aria-labelledby="output-title">Run a message to see the reply.</output>
       </section>
+      <p class="lab-challenge"><strong>Challenge:</strong> Can you make ELIZA talk about AI?</p>
     </section>
 
     <section id="compare-panel" role="tabpanel" aria-labelledby="compare-tab" hidden>
@@ -188,12 +200,12 @@
         </select>
       </div>
       <div class="compose">
-        <input id="compare-input" type="text" placeholder="I feel happy." maxlength="2000" autocomplete="off" required>
+        <input id="compare-input" type="text" placeholder="I’m worried about tomorrow’s exam." maxlength="2000" autocomplete="off" required>
         <button type="submit" id="compare-send" class="primary-button">Send to both</button>
       </div>
       <div class="examples">
-        <button type="button" class="example" data-message="I feel happy.">I feel happy.</button>
-        <button type="button" class="example" data-message="I use a computer for homework.">I use a computer for homework.</button>
+        <button type="button" class="example" data-message="I’m worried about tomorrow’s exam.">I’m worried about tomorrow’s exam.</button>
+        <button type="button" class="example" data-message="Can you help me make a study plan for tomorrow’s exam?">Can you help me make a study plan for tomorrow’s exam?</button>
       </div>
       <p id="compare-status" class="status" role="status"></p>
     </form>
