@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Open the ELIZA chatbot and Tic-Tac-Toe classroom demos.">
+  <title>AI Lesson Demos</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 80px 24px;
+      background: #f5f7fb;
+      color: #182338;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+    main { width: 100%; max-width: 860px; margin: 0 auto; }
+    header { margin-bottom: 36px; }
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 5vw, 3rem);
+      line-height: 1.2;
+      letter-spacing: -0.04em;
+    }
+    header p { margin: 0; color: #526079; font-size: 1.125rem; }
+    .demos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+    .demo {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 30px;
+      border: 1px solid #dce2ed;
+      border-radius: 18px;
+      background: #fff;
+      color: inherit;
+      text-decoration: none;
+      transition: border-color 160ms, box-shadow 160ms;
+    }
+    .demo:hover { border-color: #a2b4d0; box-shadow: 0 8px 24px #1823380d; }
+    .demo:focus-visible { outline: 3px solid #245ac7; outline-offset: 5px; }
+    .icon {
+      display: grid;
+      place-items: center;
+      width: 56px;
+      height: 56px;
+      margin-bottom: 24px;
+      border-radius: 14px;
+      background: #eaf0ff;
+      color: #245ac7;
+    }
+    .game .icon { background: #e6f5ef; color: #17735a; }
+    .icon svg { width: 30px; height: 30px; }
+    h2 { margin: 0 0 8px; font-size: 1.5rem; line-height: 1.3; letter-spacing: -0.02em; }
+    .demo p { margin: 0 0 28px; color: #526079; font-size: 1rem; }
+    .open {
+      margin-top: auto;
+      padding: 9px 16px;
+      border-radius: 8px;
+      background: #245ac7;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .game .open { background: #17735a; }
+    @media (max-width: 600px) {
+      body { padding: 40px 20px; }
+      header { margin-bottom: 28px; }
+      .demos { grid-template-columns: 1fr; gap: 20px; }
+      .demo { padding: 26px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .demo { transition: none; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>AI Lesson Demos</h1>
+      <p>Choose a demo to get started.</p>
+    </header>
+    <nav class="demos" aria-label="Classroom demos">
+      <a class="demo" href="./eliza/index.html">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 5h18a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H13l-7 5v-5a3 3 0 0 1-3-3V9a4 4 0 0 1 4-4Z"/>
+            <path d="M10 12h12M10 17h8"/>
+          </svg>
+        </span>
+        <h2>ELIZA</h2>
+        <p>Try a conversation with a classic rule-based chatbot.</p>
+        <span class="open">Open ELIZA</span>
+      </a>
+      <a class="demo game" href="./ticTacToe/index.html">
+        <span class="icon" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M12 3v26M21 3v26M3 12h26M3 21h26M4 4l5 5M9 4 4 9M23 23l5 5M28 23l-5 5"/>
+            <circle cx="16.5" cy="16.5" r="2.5"/>
+          </svg>
+        </span>
+        <h2>Tic-Tac-Toe</h2>
+        <p>Play the classic game of noughts and crosses.</p>
+        <span class="open">Open Tic-Tac-Toe</span>
+      </a>
+    </nav>
+  </main>
+</body>
+</html>
