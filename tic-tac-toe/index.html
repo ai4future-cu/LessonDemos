@@ -322,6 +322,12 @@
   .res-tag.loss{color:#F4C4C4;border-color:#F4C4C4;}
   .more-moves{color:rgba(255,255,255,.7);font-weight:700;font-size:14.5px;margin-top:8px;}
   .more-records{display:flex;align-items:center;color:rgba(255,255,255,.7);font-weight:700;font-size:14.5px;padding:0 12px;white-space:nowrap;}
+  .train-cell{background:rgba(0,0,0,.18);border:2px dashed rgba(255,255,255,.45);border-radius:12px;padding:12px 14px;margin-top:12px;}
+  .train-head{font-weight:800;font-size:15.5px;color:var(--sun);margin-bottom:8px;}
+  .demo-row{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:6px 0;}
+  .chip-v{background:#fff;border:2px solid var(--ink);border-radius:8px;padding:0 8px;font-size:13px;font-weight:800;color:var(--ink);line-height:1.7;white-space:nowrap;}
+  .demo-arrow{color:rgba(255,255,255,.7);font-weight:800;font-size:17px;}
+  .demo-row .mini-board{box-shadow:0 0 0 2px rgba(255,255,255,.25);border-radius:5px;}
   .arrow{font-weight:800;font-size:18px;color:var(--ink);}
   .out{display:inline-block;border:2px solid var(--ink);border-radius:999px;padding:3px 12px;font-size:15.5px;font-weight:800;}
   .out.win{background:var(--teal);color:#fff;}
@@ -421,6 +427,11 @@
 
     <div class="board" id="board"></div>
     <div class="status" id="status">Your turn!</div>
+  </section>
+
+  <section class="stage stage--machine hidden" id="trainPanel" aria-labelledby="tp">
+    <h2 class="stage-head" id="tp"><span class="stage-num" style="background:var(--sun);">⚙️</span>Before this game — how RL learned</h2>
+    <div id="trainBody"></div>
   </section>
 
   <section class="stage stage--machine hidden" id="brainPanel" aria-labelledby="bp">
@@ -872,6 +883,66 @@
       '<span class="fact">Empty: '+(em.length?em.join(", "):"—")+'</span>'+
     '</div>';
   }
+  function rlDemoHtml(cfg){
+    var qtable=cfg.qtable||{}, lr=cfg.config.learning_rate, winR=cfg.config.rewards.win;
+    function dMove(b,p){
+      var qs=qtable[rlKey(b,p)];
+      var lm=legalMoves(b);
+      if(!qs) return randomMove(b);
+      var best=null, cands=[], i;
+      for(i=0;i<lm.length;i++){ var q=qs[lm[i]]!==undefined?qs[lm[i]]:0; if(best===null||q>best) best=q; }
+      for(i=0;i<lm.length;i++) if((qs[lm[i]]!==undefined?qs[lm[i]]:0)===best) cands.push(lm[i]);
+      return pick(cands);
+    }
+    function bMove(b,p){
+      var lm=legalMoves(b), foe=opp(p), k;
+      for(k=0;k<lm.length;k++) if(winner(play(b,lm[k],p))===p) return lm[k];
+      for(k=0;k<lm.length;k++) if(winner(play(b,lm[k],foe))===foe) return lm[k];
+      return dMove(b,p);
+    }
+    var tries=0;
+    while(tries++<6){
+      var b=new Array(9).fill(EMPTY), p2=X, seq=[];
+      while(true){
+        var mv = p2===X ? bMove(b,p2) : randomMove(b);
+        var nb=play(b,mv,p2);
+        seq.push({board:nb, m:mv});
+        var w=winner(nb);
+        if(w===X){
+          var cells=seq.map(function(st){
+            var inner="";
+            for(var ci=0;ci<9;ci++){
+              var c=st.board[ci];
+              var cls="mini-cell";
+              if(c===X) cls+=" x";
+              if(c===O) cls+=" o";
+              if(ci===st.m) cls+=" mine";
+              inner+='<span class="'+cls+'">'+(c===EMPTY?"":c)+'</span>';
+            }
+            return '<span class="mini-board">'+inner+'</span>';
+          }).join('<span class="demo-arrow">→</span>');
+          var step=Math.round(lr*winR*10)/10;
+          var initChips="";
+          for(var sq=1;sq<=9;sq++) initChips+='<span class="chip-v">square '+sq+': 0</span>';
+          return stepBox(1, "Initialize the value table",
+                   '<div class="explain">Every (state, move) starts at <b>0</b> — the brain knows nothing.</div>'+
+                   '<div class="demo-row">'+initChips+'</div>')+
+                 stepBox(2, "Play games and collect rewards",
+                   '<div class="explain">It plays whole games against practice partners, until each game ends with a result.</div>'+
+                   '<div class="demo-row">'+cells+'</div>'+
+                   '<div class="route-result win">result: win → reward +'+winR+'</div>')+
+                 stepBox(3, "Update the value table",
+                   '<div class="explain">The reward travels back along every move of that game: <b>new value = old + α × (reward − old)</b>. e.g. the first move (square '+(seq[0].m+1)+'): 0 → +'+step+'. After thousands of games the values become real knowledge.</div>');
+        }
+        if(isFull(nb)) break;
+        b=nb; p2=opp(p2);
+      }
+    }
+    return stepBox(1, "Initialize the value table", '<div class="explain">Every (state, move) starts at 0.</div>')+
+           stepBox(2, "Play games and collect rewards", '<div class="explain">It plays whole games against practice partners.</div>')+
+           stepBox(3, "Update the value table", '<div class="explain">Each result nudges the values of the moves that led to it.</div>');
+  }
+
   function renderBrainView(view, b, p){
     var html="";
     var winNow = winner(play(b, view.chosen, p))===p;
@@ -1053,7 +1124,7 @@
                  '<span class="res '+rlCls(d)+'">value <b>'+d+'</b></span></div>';
         }).join("");
         html+=stepBox(2, "Each move — its learned value",
-          '<div class="explain">0 = a loss · 50 = a draw · 100 = a win — learned by: <b>new value = old + α × (reward − old)</b></div>'+
+          '<div class="explain">0 = a loss · 50 = a draw · 100 = a win</div>'+
           '<div class="cand-grid">'+rows+'</div>');
         var rlLead = view.reflex
           ? (view.reflex==="win" ? "A reflex applied first — it took the win." : "A reflex applied first — it blocked your immediate threat.")
@@ -1137,6 +1208,17 @@
   }
 
   var selectedBrain=null;
+  var trainPanel=$("trainPanel"), trainBody=$("trainBody");
+
+  function renderTrainPanel(){
+    var eff=effectiveBrain("rl");
+    if(eff) trainBody.innerHTML=rlDemoHtml(eff);
+  }
+  function syncTrainPanel(){
+    var show = selectedBrain==="rl" && document.querySelector(".tab.active") && document.querySelector(".tab.active").dataset.sec==="play";
+    trainPanel.classList.toggle("hidden", !show);
+    if(show) renderTrainPanel();
+  }
 
   function activeBrain(){
     return selectedBrain;
@@ -1157,6 +1239,7 @@
       if(!BRAINS[o.key]) btn.disabled=true;
       brainPicker.appendChild(btn);
     });
+    syncTrainPanel();
   }
 
   function setSide(side){
@@ -1521,6 +1604,7 @@
           '</b> · vs Greedy <b>'+tallyGames(pol, greedyMove)+'</b></div>');
         trainBtn.disabled=false;
         renderMakePicker(); renderBrainPicker();
+        renderTrainPanel();
         newGame(game?game.human:X);
       });
     });
@@ -1648,6 +1732,7 @@
     }
     selectedBrain=makeKey;   // "Apply" also switches the Play tab to this AI
     renderMakePicker(); renderBrainPicker();
+    if(makeKey==="rl") renderTrainPanel();
     newGame(game?game.human:X);
   });
 
@@ -1671,6 +1756,7 @@
     });
     // the brain panel only belongs on the Play tab (and only when fresh)
     brainPanel.classList.toggle("hidden", el.dataset.sec!=="play" || !brainVisible);
+    trainPanel.classList.toggle("hidden", el.dataset.sec!=="play" || selectedBrain!=="rl");
   });
 
   // the exported rl.json uses longer names; give the arena short ones
