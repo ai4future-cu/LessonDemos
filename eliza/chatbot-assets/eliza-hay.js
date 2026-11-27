@@ -362,7 +362,7 @@ function reassemble(reassemblyRule, components, substitutions = null, reusedPart
             const tokens = split(components[n - 1]).map(word => ({
                 from: word,
                 // One pass over captured words, never over the reply template.
-                to: substitutions && !quoted ? substitutions.get(word) || word : word
+                to: substitutions ? substitutions.get(word) || word : word
             }));
             let expanded = tokens.map(token => token.to);
             if (reusedParts && tokens.length) reusedParts.push({
@@ -2215,6 +2215,68 @@ function buildConversationScript(groups) {
   return script;
 }
 
+// Saved versions contain rules only, never conversation history or API settings.
+function snapshotScript(script, inactiveKeywords, inactiveGroups, orderKeywordsByPriority, allowUnmatchedGroups) {
+  const transforms = rules => rules.map(rule => ({
+    tokens: rule.decomposition.slice(), replies: rule.reassemblyRules.map(reply => reply.slice()),
+    labels: {...rule.slotLabels}
+  }));
+  return {
+    schemaVersion: 1, orderKeywordsByPriority, allowUnmatchedGroups,
+    rules: [...script.rules.values()].map(group => ({
+      keyword: group.keyword, substitution: group.wordSubstitution, precedence: group.precedence,
+      tags: group.tags.slice(), link: group.linkKeyword, rules: transforms(group.transforms)
+    })),
+    memory: {keyword: script.memoryRule.keyword, rules: transforms(script.memoryRule.transforms)},
+    substitutions: [...(script.captureSubstitutions || [])],
+    inactiveKeywords: [...inactiveKeywords], inactiveGroups: [...inactiveGroups]
+  };
+}
+
+function restoreSnapshot(snapshot) {
+  const invalid = () => { throw new Error('This saved ELIZA could not be read.'); };
+  const strings = (values, limit = 500) => Array.isArray(values) && values.length <= limit &&
+    values.every(value => typeof value === 'string' && value.length <= 2000);
+  if (!snapshot || snapshot.schemaVersion !== 1 || !Array.isArray(snapshot.rules) ||
+      snapshot.rules.length > 500 || !snapshot.memory || !strings(snapshot.inactiveKeywords) ||
+      !strings(snapshot.inactiveGroups) || !Array.isArray(snapshot.substitutions) ||
+      snapshot.substitutions.length > 100) invalid();
+  if (snapshot.editorGroups !== undefined && !strings(snapshot.editorGroups)) invalid();
+  if (snapshot.editorSelection !== undefined && (!snapshot.editorSelection ||
+      typeof snapshot.editorSelection.keyword !== 'string' ||
+      (snapshot.editorSelection.ruleIndex !== null && !Number.isSafeInteger(snapshot.editorSelection.ruleIndex)))) invalid();
+  const script = new Script();
+  const restoreRules = rules => {
+    if (!Array.isArray(rules) || rules.length > 200) invalid();
+    return rules.map(({tokens, replies, labels}) => {
+      if (!strings(tokens) || !tokens.length || !Array.isArray(replies) || replies.length > 200 ||
+          !replies.every(reply => strings(reply)) || !labels || typeof labels !== 'object' || Array.isArray(labels) ||
+          !Object.entries(labels).every(([key, value]) => /^\d+$/.test(key) && typeof value === 'string' && value.length < 100)) invalid();
+      const rule = new Transform(tokens.slice(), replies.map(reply => reply.slice()));
+      rule.slotLabels = {...labels};
+      return rule;
+    });
+  };
+  for (const saved of snapshot.rules) {
+    if (!saved || typeof saved.keyword !== 'string' || !saved.keyword || saved.keyword.length > 100 ||
+        script.rules.has(saved.keyword) || typeof saved.substitution !== 'string' ||
+        !Number.isFinite(saved.precedence) || !strings(saved.tags) || typeof saved.link !== 'string') invalid();
+    const group = new RuleKeyword(saved.keyword, saved.substitution, saved.precedence, saved.tags.slice(), saved.link);
+    group.transforms = restoreRules(saved.rules);
+    script.rules.set(group.keyword, group);
+  }
+  if (!script.rules.get(SPECIAL_RULE_NONE)?.transforms.length ||
+      typeof snapshot.memory.keyword !== 'string' ||
+      !snapshot.substitutions.every(pair => strings(pair, 2) && pair.length === 2)) invalid();
+  script.memoryRule = new RuleMemory(snapshot.memory.keyword);
+  script.memoryRule.transforms = restoreRules(snapshot.memory.rules);
+  if (script.memoryRule.keyword && script.memoryRule.transforms.length !== 4) invalid();
+  script.captureSubstitutions = new Map(snapshot.substitutions);
+  script.memoryRule.captureSubstitutions = script.captureSubstitutions;
+  for (const group of script.rules.values()) group.captureSubstitutions = script.captureSubstitutions;
+  return script;
+}
+
 function useClassroomWording(script) {
   // Match the original input first. Apply DOCTOR's substitutions only when a
   // captured fragment is reused in a reply or saved memory.
@@ -2248,13 +2310,13 @@ function useClassroomWording(script) {
   youRules[0].decomposition[3] = 'ME';
   youRules[2].decomposition[3] = 'ME';
 
-  // A full clause can be quoted as written. Reassembly preserves captured words
-  // inside quotation marks; fixed pronouns still belong to the reply template.
-  iRules[11].reassemblyRules[0] = ['YOU', 'SAID', '“', '1', '”', '.'];
-  iRules[11].reassemblyRules[2] = ['WHAT', 'MAKES', 'YOU', 'SAY', '“', '1', '”', '?'];
+  // Reflect the clause from the user's perspective. Captured pronouns are
+  // substituted once; fixed words still belong to the reply template.
+  iRules[11].reassemblyRules[0] = ['YOU', 'SAY', 'THAT', '1', '.'];
+  iRules[11].reassemblyRules[2] = ['WHAT', 'MAKES', 'YOU', 'SAY', '1', '?'];
   youRules[3].reassemblyRules[1] = ['WHAT', 'MAKES', 'YOU', 'SAY', 'THAT', '?'];
   const myRules = rules('MY');
-  myRules[0].reassemblyRules[1] = ['WHAT', 'DID', 'YOU', 'MEAN', 'WHEN', 'YOU', 'SAID', '“', 'MY', '4', '5', '”', '?'];
+  myRules[0].reassemblyRules[1] = ['WHAT', 'DID', 'YOU', 'MEAN', 'WHEN', 'YOU', 'SAID', 'YOUR', '4', '5', '?'];
   myRules[1].reassemblyRules[3] = ['IS', 'YOUR', '3', 'IMPORTANT', 'TO', 'YOU', '?'];
 
   // Give contractions their own patterns so their words are never expanded in the trace.
@@ -2273,7 +2335,7 @@ function useClassroomWording(script) {
   ];
 }
 
-function describeScript(script, inactiveKeywords) {
+function describeScript(script, inactiveKeywords, inactiveGroups) {
   function transformsOf(rule) {
     return (rule.transforms || []).map(function (t) {
       return { decomposition: '(' + join(t.decomposition) + ')', reassembly: (t.reassemblyRules || []).map(function (rr) { return join(rr); }),
@@ -2286,6 +2348,7 @@ function describeScript(script, inactiveKeywords) {
       keyword: (key === SPECIAL_RULE_NONE) ? 'NONE' : key,
       trigger: key !== SPECIAL_RULE_NONE && rule.hasTransformation() && !inactiveKeywords?.has(key),
       enabled: !inactiveKeywords?.has(key),
+      active: !inactiveGroups?.has(key),
       precedence: rule.getPrecedence ? rule.getPrecedence() : 0,
       substitution: rule.wordSubstitution || '',
       tags: (rule.dlistTags ? rule.dlistTags() : (rule.tags || [])).slice(),
@@ -2321,9 +2384,17 @@ function resolveKeywordGroup(rules, keyword) {
 // replayed). session.trace(text) returns the structured trace for one turn,
 // including the current memory queue.
 window.ElizaHay = {
-  make: function ({matchOriginalWords = false, randomReplies = false, orderKeywordsByPriority = false, groups} = {}) {
-    var script = groups ? buildConversationScript(groups) : buildScriptOrThrow();
-    if (matchOriginalWords && !groups) useClassroomWording(script);
+  make: function ({matchOriginalWords = false, randomReplies = false, orderKeywordsByPriority = false, groups, snapshot, blank = false} = {}) {
+    if (snapshot) orderKeywordsByPriority = snapshot.orderKeywordsByPriority === true;
+    var script = snapshot ? restoreSnapshot(snapshot) : blank ? buildConversationScript([
+      {keyword:'NONE', words:[], precedence:0, rules:[{tokens:['0'], replies:[['TELL','ME','MORE']], labels:{}}]}
+    ]) : groups ? buildConversationScript(groups) : buildScriptOrThrow();
+    if (matchOriginalWords && !groups && !snapshot && !blank) useClassroomWording(script);
+    if (blank) {
+      script.captureSubstitutions = new Map([...buildScriptOrThrow().rules.values()]
+        .filter(group => group.wordSubstitution).map(group => [group.keyword, group.wordSubstitution]));
+      for (const group of script.rules.values()) group.captureSubstitutions = script.captureSubstitutions;
+    }
     if (orderKeywordsByPriority) {
       // A group inherits its highest existing keyword priority so its triggers agree.
       const priorities = new Map();
@@ -2338,10 +2409,10 @@ window.ElizaHay = {
     var eliza = new Eliza(script.rules, script.memoryRule, new HayTrace(), 0);
     eliza.randomReplies = randomReplies;
     eliza.orderKeywordsByPriority = orderKeywordsByPriority;
-    eliza.allowUnmatchedGroups = orderKeywordsByPriority;
-    var inactiveKeywords = new Set();
+    eliza.allowUnmatchedGroups = snapshot ? snapshot.allowUnmatchedGroups === true : orderKeywordsByPriority;
+    var inactiveKeywords = new Set(snapshot?.inactiveKeywords || []);
     eliza.inactiveKeywords = inactiveKeywords;
-    var inactiveGroups = new Set();
+    var inactiveGroups = new Set(snapshot?.inactiveGroups || []);
     eliza.inactiveGroups = inactiveGroups;
     var originals = new Map();
     var aliases = new Map();
@@ -2368,7 +2439,10 @@ window.ElizaHay = {
       return script.rules.get(keyword === 'NONE' ? SPECIAL_RULE_NONE : keyword).transforms;
     }
     return {
-      dictionary: function () { return describeScript(script, inactiveKeywords); },
+      dictionary: function () { return describeScript(script, inactiveKeywords, inactiveGroups); },
+      snapshot: function () {
+        return snapshotScript(script, inactiveKeywords, inactiveGroups, orderKeywordsByPriority, eliza.allowUnmatchedGroups);
+      },
       clearConversation: function () {
         script.memoryRule.memories.length = 0;
         script.rules.forEach(function (rule) {

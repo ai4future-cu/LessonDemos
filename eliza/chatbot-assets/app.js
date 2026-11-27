@@ -15,7 +15,7 @@ const chatLog = byId('chat-log');
 const input = byId('chat-input');
 const defaultKeyword = 'MY';
 const examples = [...document.querySelectorAll('[data-example]')];
-const chatControls = [input, byId('send'), ...examples];
+const chatControls = [input, byId('send'), byId('chat-version'), ...examples];
 const explainedInput = byId('explained-input');
 const explainedExamples = [...document.querySelectorAll('[data-explained-example]')];
 const explainedControls = [explainedInput, byId('run-message'), ...explainedExamples];
@@ -25,7 +25,7 @@ const aiRuleExample = {
 };
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const chatEngine = window.ElizaHay.make({matchOriginalWords:true, randomReplies:false});
+let chatEngine = window.ElizaHay.make({matchOriginalWords:true, randomReplies:false});
 const session = {
   engine: window.ElizaHay.make({matchOriginalWords:true, randomReplies:false, orderKeywordsByPriority:true}),
   groupNames: new Set(),
@@ -233,9 +233,10 @@ function selectionFor(turn, reply) {
   const names = captureNames(rule);
   const replies = build.replyOptions.map(option => formatTemplate(option, null, names, ruleTerms(rule)));
   const substitutedParts = new Map((substitution?.parts || []).map(part => [part.component, part.after]));
+  const rawCaptures = [...names].map(([slot, name]) => [name, build.components[Number(slot) - 1] ?? '']);
   const captures = [...names].map(([slot, name]) => [name,
     substitutedParts.get(Number(slot)) ?? build.components[Number(slot) - 1] ?? '']);
-  return {keyword:group.keyword, group, inputKeyword, passedKeyword, words:wordsForGroup(group.keyword), ruleIndex, captures,
+  return {keyword:group.keyword, group, inputKeyword, passedKeyword, words:wordsForGroup(group.keyword), ruleIndex, captures, rawCaptures,
     usedReply, matchingKeywords, replies, substitution, kind:fallback ? 'general' : 'rule'};
 }
 
@@ -246,7 +247,7 @@ function renderSubstitutions(substitution) {
   rows.replaceChildren();
   const unique = new Set();
   const parts = (substitution?.parts || []).filter(part => {
-    const key = JSON.stringify([part.component, part.before, part.after, part.quoted]);
+    const key = JSON.stringify([part.component, part.before, part.after]);
     if (unique.has(key)) return false;
     unique.add(key);
     return true;
@@ -255,8 +256,7 @@ function renderSubstitutions(substitution) {
   if (substitution === undefined) status.textContent = '';
   else if (!parts.length) status.textContent = 'No words to substitute for this reply.';
   else if (parts.some(part => part.tokens.some(token => token.from !== token.to))) status.textContent = '';
-  else status.textContent = parts.some(part => part.quoted)
-    ? 'Quoted words stay unchanged.' : 'No word substitutions needed.';
+  else status.textContent = 'No word substitutions needed.';
   for (const part of parts) {
     const row = element('tr');
     for (const side of ['from', 'to']) {
@@ -325,15 +325,19 @@ function editableField(value, label, statusId, save, className = '', singleLine 
       editorStatus('', false, statusId);
     }
   });
-  field.addEventListener('keydown', event => {
-    if (event.key !== 'Enter' || event.isComposing) return;
-    event.preventDefault();
-    if (pending || field.value.trim() === value) return;
-    const error = save(field.value);
+  field.commitEdit = text => {
+    if (pending || text.trim() === value) return null;
+    const error = save(text);
     if (error) {
       field.setAttribute('aria-invalid', 'true');
       editorStatus(error, true, statusId);
     }
+    return error;
+  };
+  field.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' || event.isComposing) return;
+    event.preventDefault();
+    field.commitEdit(field.value);
   });
   return field;
 }
@@ -515,7 +519,16 @@ function renderBoard(selection, animate = false, focusRule = false) {
   if (selection.usedReply === undefined) return;
   if (selectedRule) {
     selectedRule.classList.add('rule-used');
-    if (selection.kind === 'rule') selectedRule.append(element('span', 'Matched', 'rule-match-label'));
+    if (selection.kind === 'rule') {
+      const matchNote = element('div', undefined, 'rule-match-label');
+      matchNote.append(element('span', 'Matched'));
+      for (const [name, words] of selection.rawCaptures || []) {
+        const capture = element('span', undefined, 'rule-match-slot');
+        capture.append(element('code', slotTag(name)), ' = ', words ? readable(words) : '(empty)');
+        matchNote.append(' · ', capture);
+      }
+      selectedRule.append(matchNote);
+    }
     if (animate) selectedRule.classList.add('glow');
   }
   const used = selection.usedReply < replies.length && replyList.children[selection.usedReply];
@@ -594,7 +607,7 @@ function loadGroups() {
   const dictionary = session.engine.dictionary().filter(entry => !entry.isMemory);
   session.keywords = new Map(dictionary.map(entry => [entry.keyword, entry]));
   if (!session.groupNames.size) {
-    dictionary.filter(entry => entry.keyword !== 'NONE' && entry.transforms.length)
+    dictionary.filter(entry => entry.keyword !== 'NONE' && entry.active !== false && entry.transforms.length)
       .forEach(entry => session.groupNames.add(entry.keyword));
   }
   renderGroupOptions();
@@ -894,7 +907,8 @@ function showGroupUndo() {
 }
 
 function availableDefaultGroup() {
-  return session.deletedGroups.has(defaultKeyword) ? keywordSelect.options[1].value : defaultKeyword;
+  return session.groupNames.has(defaultKeyword) && !session.deletedGroups.has(defaultKeyword)
+    ? defaultKeyword : keywordSelect.options[1]?.value || 'NONE';
 }
 
 byId('delete-group').addEventListener('click', () => {
@@ -1015,7 +1029,7 @@ byId('explained-form').addEventListener('submit', event => {
 
 const priorityControl = byId('keyword-priority');
 function saveKeywordPriority() {
-  if (pending) return;
+  if (pending || byId('keyword-priority-control').hidden) return;
   const {keyword, ruleIndex} = boardSelection;
   const priority = priorityControl.valueAsNumber;
   if (!Number.isSafeInteger(priority) || priority < 0) {
@@ -1091,6 +1105,177 @@ tabs.forEach((tab, index) => {
   });
 });
 
+// Saved versions keep rules only. Every Chat selection starts a fresh conversation.
+let profileStorage;
+try { profileStorage = window.localStorage; } catch { /* A private browser may block storage. */ }
+const library = window.ElizaLibrary.create(profileStorage, snapshot => {
+  window.ElizaHay.make({snapshot});
+  return true;
+});
+let editingProfileId = null;
+let previousWorkspace = null;
+let deletedProfile = null;
+const versionSelect = byId('chat-version');
+const workspaceVersion = byId('workspace-version');
+
+function renderVersions() {
+  const selected = versionSelect.value;
+  const original = element('option', 'ELIZA (default)');
+  original.value = '';
+  versionSelect.replaceChildren(original, ...library.list().map(profile => {
+    const option = element('option', profile.name);
+    option.value = profile.id;
+    return option;
+  }));
+  versionSelect.value = library.get(selected) ? selected : '';
+  workspaceVersion.replaceChildren(...[...versionSelect.options].map(option => option.cloneNode(true)));
+  workspaceVersion.value = library.get(editingProfileId) ? editingProfileId : '';
+  byId('delete-saved-eliza').hidden = !workspaceVersion.value;
+  byId('save-eliza').textContent = editingProfileId ? 'Save changes to Chat' : 'Save to Chat';
+  byId('save-eliza-copy').hidden = !editingProfileId;
+}
+
+function selectChatVersion(id = versionSelect.value) {
+  const profile = library.get(id);
+  versionSelect.value = profile?.id || '';
+  chatEngine = profile ? window.ElizaHay.make({snapshot:profile.snapshot})
+    : window.ElizaHay.make({matchOriginalWords:true, randomReplies:false});
+  chatLog.replaceChildren();
+  input.value = '';
+  byId('chat-status').textContent = '';
+  byId('clear-chat').disabled = true;
+}
+
+function commitWorkspaceEdits() {
+  const edits = [...document.querySelectorAll('#rule-board .row-field')]
+    .filter(field => field.commitEdit).map(field => ({field, value:field.value}));
+  saveKeywordPriority();
+  if (byId('keyword-priority').getAttribute('aria-invalid') === 'true') return false;
+  for (const {field, value} of edits) if (field.commitEdit(value)) return false;
+  return true;
+}
+
+function workspaceSnapshot() {
+  return {...session.engine.snapshot(),
+    editorGroups:[...session.groupNames].filter(keyword => !session.deletedGroups.has(keyword)),
+    editorSelection:{keyword:boardSelection.keyword, ruleIndex:boardSelection.ruleIndex}};
+}
+
+function openWorkspace(snapshot, name, id = null, keepUndo = true) {
+  if (pending || chatPending) return;
+  if (keepUndo) previousWorkspace = {snapshot:workspaceSnapshot(), name:byId('eliza-name').value, id:editingProfileId};
+  session.engine = snapshot ? window.ElizaHay.make({snapshot})
+    : window.ElizaHay.make({matchOriginalWords:true, randomReplies:false, orderKeywordsByPriority:true});
+  session.groupNames = new Set(session.engine.dictionary().filter(entry => !entry.isMemory &&
+    entry.keyword !== 'NONE' && entry.active !== false && (entry.transforms.length || snapshot?.editorGroups?.includes(entry.keyword))).map(entry => entry.keyword));
+  session.deletedGroups = new Map();
+  session.wordDefaults = new Map();
+  editingProfileId = id;
+  byId('eliza-name').value = name;
+  loadGroups();
+  for (const keyword of session.groupNames) session.wordDefaults.set(keyword, wordsForGroup(keyword));
+  const savedSelection = snapshot?.editorSelection;
+  const chosen = session.groupNames.has(savedSelection?.keyword) ? savedSelection.keyword : availableDefaultGroup();
+  const count = ruleGroup(chosen)?.transforms.length || 0;
+  const index = chosen === savedSelection?.keyword && Number.isInteger(savedSelection.ruleIndex)
+    ? savedSelection.ruleIndex : chosen === 'MY' ? 1 : 0;
+  renderBoard({keyword:chosen, ruleIndex:Math.max(0, Math.min(index, count - 1))});
+  explainedInput.value = '';
+  byId('explained-output').textContent = 'Run a message to see the reply.';
+  byId('explained-status').textContent = '';
+  showGroupUndo();
+  byId('undo-workspace').hidden = !previousWorkspace;
+  renderVersions();
+  showTab(byId('explained-tab'));
+}
+
+versionSelect.addEventListener('change', () => selectChatVersion());
+workspaceVersion.addEventListener('change', () => {
+  byId('delete-saved-eliza').hidden = !workspaceVersion.value;
+});
+byId('load-eliza').addEventListener('click', () => {
+  if (pending || chatPending || !commitWorkspaceEdits()) return;
+  const profile = library.get(workspaceVersion.value);
+  openWorkspace(profile?.snapshot, profile?.name || 'myELIZA', profile?.id || null);
+  byId('eliza-workspace').open = true;
+  byId('workspace-status').textContent = profile ? 'Editing ' + profile.name + '. Save changes when you are ready.' : 'Editing a fresh copy of ELIZA. The default Chat stays unchanged.';
+});
+byId('save-eliza-form').addEventListener('submit', event => {
+  event.preventDefault();
+  if (pending || chatPending) return;
+  if (!commitWorkspaceEdits()) {
+    editorStatus('Check the highlighted field before saving.', true, 'workspace-status');
+    return;
+  }
+  try {
+    const profile = library.save({id:editingProfileId, name:byId('eliza-name').value, snapshot:workspaceSnapshot()});
+    editingProfileId = profile.id;
+    byId('eliza-name').value = profile.name;
+    renderVersions();
+    if (versionSelect.value === profile.id) selectChatVersion(profile.id);
+    editorStatus(profile.name + ' saved. Choose it in Chat.' + (library.isPersistent() ? '' : ' Browser storage is unavailable; this copy lasts only for this tab.'), false, 'workspace-status');
+  } catch (error) { editorStatus(error.message, true, 'workspace-status'); }
+});
+byId('save-eliza-copy').addEventListener('click', () => {
+  if (library.list().length >= window.ElizaLibrary.limit) {
+    editorStatus('You have 3 saved ELIZAs. Update this version or delete one above.', true, 'workspace-status');
+    return;
+  }
+  editingProfileId = null;
+  byId('eliza-name').value = (byId('eliza-name').value + ' copy').slice(0, 40);
+  renderVersions();
+  byId('eliza-name').focus();
+});
+byId('build-from-scratch').addEventListener('click', () => {
+  if (!commitWorkspaceEdits()) return;
+  const blank = window.ElizaHay.make({blank:true, matchOriginalWords:true, orderKeywordsByPriority:true});
+  openWorkspace(blank.snapshot(), 'myELIZA');
+  editorStatus('Advanced challenge: add your first keyword group. For now, every message gets “Tell me more.”', false, 'workspace-status');
+});
+byId('start-from-eliza').addEventListener('click', () => {
+  if (!commitWorkspaceEdits()) return;
+  openWorkspace(null, 'myELIZA');
+  editorStatus('Started a fresh copy of ELIZA. Your saved versions are kept.', false, 'workspace-status');
+});
+byId('undo-workspace').addEventListener('click', () => {
+  if (!previousWorkspace) return;
+  const previous = previousWorkspace;
+  openWorkspace(previous.snapshot, previous.name, previous.id, false);
+  previousWorkspace = null;
+  byId('undo-workspace').hidden = true;
+  editorStatus('Previous workspace restored.', false, 'workspace-status');
+});
+byId('delete-saved-eliza').addEventListener('click', () => {
+  if (pending || chatPending) return;
+  deletedProfile = library.get(workspaceVersion.value);
+  if (!deletedProfile) return;
+  const wasChatting = versionSelect.value === deletedProfile.id;
+  const wasEditing = editingProfileId === deletedProfile.id;
+  library.remove(deletedProfile.id);
+  if (wasEditing) editingProfileId = null;
+  renderVersions();
+  if (wasChatting) selectChatVersion('');
+  deletedProfile.wasEditing = wasEditing;
+  editorStatus(deletedProfile.name + ' deleted. You can undo this.', false, 'workspace-status');
+  byId('undo-delete-version').hidden = false;
+});
+byId('undo-delete-version').addEventListener('click', () => {
+  if (!deletedProfile || pending || chatPending) return;
+  try {
+    const {wasEditing, ...profile} = deletedProfile;
+    library.restore(profile);
+    if (wasEditing && editingProfileId === null && byId('eliza-name').value === profile.name) editingProfileId = profile.id;
+    renderVersions();
+    workspaceVersion.value = profile.id;
+    byId('delete-saved-eliza').hidden = false;
+    editorStatus(profile.name + ' restored.', false, 'workspace-status');
+    deletedProfile = null;
+    byId('undo-delete-version').hidden = true;
+  } catch (error) { editorStatus(error.message, true, 'workspace-status'); }
+});
+
+renderVersions();
+if (!library.isPersistent()) editorStatus('Browser storage is unavailable. Saved versions will last only for this tab.', false, 'workspace-status');
 loadGroups();
 for (const keyword of session.groupNames) session.wordDefaults.set(keyword, wordsForGroup(keyword));
 renderBoard({keyword:defaultKeyword, ruleIndex:1});

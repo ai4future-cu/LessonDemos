@@ -44,16 +44,30 @@ test('substitutions run once on reused words and preserve literal reply-template
     'I HEARD YOU SAY YOU USE MY COMPUTER');
 });
 
-test('an explicit quotation keeps the captured source text unchanged', async () => {
+test('captured pronouns are substituted even in older reply templates containing quotation marks', async () => {
   const api = await factory();
   const engine = api.make({ matchOriginalWords: true });
   engine.addRule('COMPUTER', ['0'], ['YOU', 'SAID', '“', '1', '”', '.']);
   const turn = await engine.trace('My computer helps me');
-  assert.equal(turn.output, 'YOU SAID “ MY COMPUTER HELPS ME ” .');
+  assert.equal(turn.output, 'YOU SAID “ YOUR COMPUTER HELPS YOU ” .');
   const part = turn.steps.find(step => step.kind === 'substitute').parts[0];
   assert.equal(part.quoted, true);
-  assert.equal(part.before, part.after);
-  assert.ok(part.tokens.every(token => token.from === token.to));
+  assert.notEqual(part.before, part.after);
+  assert.equal(part.after, 'YOUR COMPUTER HELPS YOU');
+});
+
+test('the default I fallback substitutes the full clause, and saved older versions do the same', async () => {
+  const api = await factory();
+  const engine = api.make({matchOriginalWords:true, orderKeywordsByPriority:true});
+  const turn = await engine.trace('I wish AI could understand me.');
+  assert.equal(turn.output, 'YOU SAY THAT YOU WISH AI COULD UNDERSTAND YOU .');
+  const part = turn.steps.find(step => step.kind === 'substitute').parts[0];
+  assert.equal(part.before, 'I WISH AI COULD UNDERSTAND ME');
+  assert.equal(part.after, 'YOU WISH AI COULD UNDERSTAND YOU');
+  engine.editReply('I', 11, 0, ['YOU','SAID','“','1','”','.']);
+  const saved = api.make({snapshot:JSON.parse(JSON.stringify(engine.snapshot()))});
+  assert.equal((await saved.trace('I wish AI could understand me.')).output,
+    'YOU SAID “ YOU WISH AI COULD UNDERSTAND YOU ” .');
 });
 
 test('new keyword groups and linked trigger words use the same substitutions', async () => {

@@ -46,9 +46,22 @@ button:disabled { cursor: default; opacity: .6; }
   pointer-events: none;
   user-select: none;
 }
-.chat-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: #fff; }
-.chat-heading h2 { font-size: 1.4rem; font-weight: 850; }
+.chat-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: #fff; }
+.chat-toolbar > .text-button { flex-shrink: 0; min-height: 42px; padding: 0; }
 .text-button { border: 0; background: transparent; color: inherit; font-size: .875rem; text-decoration: underline; text-underline-offset: 3px; }
+.chat-version-bar { display: flex; flex: 1; min-width: 0; align-items: center; gap: 12px; color: #fff; font-size: .9rem; }
+.chat-version-bar label { flex-shrink: 0; font-weight: 650; }
+.chat-version-bar select { flex: 0 1 20rem; width: 20rem; min-width: 0; max-width: calc(100% - 6rem); min-height: 42px; padding: 6px 32px 6px 10px; border: 2px solid var(--accent); border-radius: 9px; color: var(--ink); background: var(--surface); }
+.eliza-workspace { --panel-line: var(--border); --panel-tint: #ece5f5; --panel-ink: var(--accent); --panel-edge: #b9a8d0; --panel-fill: #dfd2f1; margin: 0 0 24px; padding: 14px 18px; border: 2px solid var(--border); border-radius: 16px; background: #faf8fd; }
+.eliza-workspace > summary { width: fit-content; color: var(--accent); font-size: 1rem; font-weight: 750; cursor: pointer; }
+.workspace-save, .workspace-load { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 16px; }
+.workspace-save label, .workspace-load label { font-weight: 650; }
+.workspace-save .edit-button, .workspace-load .edit-button { min-height: 42px; }
+.workspace-save input, .workspace-load select { min-width: 0; width: 15rem; max-width: 100%; min-height: 44px; padding: 7px 10px; border: 2px solid var(--border); border-radius: 10px; background: var(--surface); font: inherit; }
+.workspace-hint { margin-top: 12px; color: var(--muted); font-size: .875rem; }
+.workspace-start { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: .875rem; }
+.workspace-start #build-from-scratch { color: var(--accent); font-weight: 750; }
+.workspace-start span { flex-basis: 100%; }
 .chat-log {
   min-height: clamp(128px, 20dvh, 160px);
   max-height: clamp(232px, 38dvh, 304px);
@@ -106,10 +119,8 @@ button:disabled { cursor: default; opacity: .6; }
 .panel :focus-visible { outline-color: var(--accent); }
 .substitution-status { color: var(--muted); font-size: .9rem; font-weight: 500; }
 .substitution-status:empty { display: none; }
-.substitution-description { color: var(--muted); font-size: .9rem; font-weight: 500; }
-.substitution-example { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin: 8px 0 14px; color: var(--muted); font-size: .9rem; font-weight: 500; }
-.substitution-example > span:not(:first-child) { white-space: nowrap; }
-.substitution-example mark { padding: 0 2px; border-radius: 3px; color: var(--panel-ink); background: var(--gold-soft); font-weight: 750; }
+.pronoun-pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); gap: 8px 18px; margin: 12px 0 2px; padding: 0; list-style: none; }
+.pronoun-pairs li { white-space: nowrap; }
 .lab-challenge { max-width: 38rem; margin: 40px auto; color: var(--ink); text-align: center; text-wrap: balance; font-size: clamp(1.2rem, 3.2vw, 1.6rem); font-weight: 800; line-height: 1.4; }
 .lab-challenge strong { color: var(--accent); font-weight: 900; }
 .substitution-table { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
@@ -244,7 +255,9 @@ textarea.row-field { display: block; field-sizing: content; resize: vertical; }
 .readonly-template { padding: 3px 4px; overflow-wrap: anywhere; }
 .rule-row.rule-used, .route-result.rule-used, .reply-list .reply-used { background: var(--panel-tint); border-color: var(--panel-edge); }
 .used-label { grid-column: 2; justify-self: start; padding: 0 6px; border-radius: 4px; background: var(--gold-soft); color: #654407; font-weight: 800; font-size: .8125rem; }
-.rule-match-label { grid-column: 2; justify-self: start; color: var(--panel-ink); font-size: .8125rem; font-weight: 800; }
+.rule-match-label { grid-column: 2 / -1; color: var(--panel-ink); font-size: .875rem; font-weight: 800; overflow-wrap: anywhere; }
+.rule-match-slot { color: var(--ink); font-weight: 500; }
+.rule-match-slot code { color: var(--accent); font-weight: 650; }
 .glow { animation: highlight .6s ease-out; }
 @keyframes highlight {
   from { background-color: var(--panel-fill); box-shadow: inset 0 0 0 3px var(--panel-line); }

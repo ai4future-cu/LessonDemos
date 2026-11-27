@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Explore Joseph Weizenbaum’s ELIZA and today’s chatbots. Chat, explore ELIZA’s rules, and compare replies.">
   <title>Chatbot Lab</title>
-  <link rel="stylesheet" href="chatbot-assets/style.css?v=classroom-opening-1">
+  <link rel="stylesheet" href="chatbot-assets/style.css?v=matched-slots-1">
   <link rel="stylesheet" href="../compare/style.css?v=reflect-card-1">
-  <script defer src="chatbot-assets/eliza-hay.js?v=post-match-substitutions-1"></script>
-  <script defer src="chatbot-assets/app.js?v=classroom-opening-1"></script>
+  <script defer src="chatbot-assets/eliza-hay.js?v=pronoun-guide-1"></script>
+  <script defer src="chatbot-assets/profiles.js?v=simple-chat-1"></script>
+  <script defer src="chatbot-assets/app.js?v=matched-slots-1"></script>
   <script defer src="../compare/config.js?v=workshop-1"></script>
   <script defer src="../compare/system-prompt.js?v=classroom-1"></script>
-  <script defer src="../compare/api.js?v=classroom-1"></script>
+  <script defer src="../compare/api.js?v=connection-hint-1"></script>
   <script defer src="../compare/app.js?v=compare-layout-2"></script>
 </head>
 <body>
@@ -27,10 +28,13 @@
     </nav>
     <section class="chat" id="chat-panel" role="tabpanel" aria-labelledby="chat-tab">
       <img class="chat-mascot" src="chatbot-assets/chat-robot.png" alt="" width="112" height="106">
-      <header class="chat-heading">
-        <h2 id="chat-title">Chat</h2>
+      <div class="chat-toolbar">
+        <div class="chat-version-bar">
+          <label for="chat-version">Chat with</label>
+          <select id="chat-version"><option value="">ELIZA (default)</option></select>
+        </div>
         <button type="button" id="clear-chat" class="text-button" disabled>Clear chat</button>
-      </header>
+      </div>
       <div id="chat-log" class="chat-log" role="log" aria-label="Conversation" aria-relevant="additions"></div>
       <form id="chat-form" class="chat-form">
         <div class="examples">
@@ -55,7 +59,7 @@
         </div>
         <div class="examples explained-examples">
           <button type="button" class="example" data-explained-example="Which AI is the best AI?">Which AI is the best AI?</button>
-          <button type="button" class="example" data-explained-example="Can AI help me prepare for my exam?">Can AI help me prepare for my exam?</button>
+          <button type="button" class="example" data-explained-example="I wish AI could understand me.">I wish AI could understand me.</button>
         </div>
         <p id="explained-status" class="editor-status" role="status"></p>
       </form>
@@ -119,21 +123,19 @@
           <details class="pattern-guide" id="pattern-guide">
             <summary>How does a rule match?</summary>
             <div class="pattern-guide-content">
-              <p class="pattern-guide-input">Input: <strong>I think my exams are making me nervous.</strong></p>
-              <p>This pattern is in the <strong>My</strong> group. Line up each part with the input:</p>
-              <table class="pattern-guide-example" aria-label="My rule matching example">
+              <p class="pattern-guide-input">Input: <strong>Sometimes I remember the school trip.</strong></p>
+              <p>This example uses a pattern from the <strong>Remember</strong> group:</p>
+              <table class="pattern-guide-example" aria-label="Remember rule matching example">
                 <thead>
-                  <tr><th scope="col"><code>*</code></th><th scope="col"><code>my</code></th><th scope="col"><code>[slot 1]</code></th></tr>
+                  <tr><th scope="col"><code>*</code></th><th scope="col"><code>I remember</code></th><th scope="col"><code>[slot 1]</code></th></tr>
                 </thead>
                 <tbody>
-                  <tr class="pattern-guide-words"><td>I think</td><td>my</td><td><mark>exams are making me nervous</mark></td></tr>
+                  <tr class="pattern-guide-words"><td>Sometimes</td><td>I remember</td><td><mark>the school trip</mark></td></tr>
                   <tr class="pattern-guide-meanings"><td>Any words<br>(or none)</td><td>Must match</td><td>Keep for the reply</td></tr>
                 </tbody>
               </table>
-              <p><code>[slot 1]</code> keeps <strong>exams are making me nervous</strong>.</p>
-              <p>Step 3 changes <code>me</code> to <code>you</code> before filling the reply.</p>
-              <p class="pattern-guide-reply">Reply: “Your <mark>exams are making you nervous</mark>.”</p>
-              <p class="pattern-guide-miss"><strong>Does not match:</strong> “I think exams are making me nervous.”<br>This rule needs the word <code>my</code>.</p>
+              <p><code>[slot 1]</code> keeps <strong>the school trip</strong>.</p>
+              <p class="pattern-guide-miss"><strong>Does not match:</strong> “Sometimes I think about the school trip.”<br>This rule needs the words <code>I remember</code>.</p>
               <details class="pattern-guide-reference">
                 <summary>More pattern symbols</summary>
                 <p class="pattern-key"><code>*</code> any words · <code>word</code> exact match · <code>[a/b]</code> either word · <code>[slot 1]</code> words to reuse</p>
@@ -147,10 +149,10 @@
           </ol>
           <form id="add-rule-form" class="inline-editor" hidden>
             <label for="add-rule-pattern">Pattern</label>
-            <input id="add-rule-pattern" type="text" class="pattern-input" placeholder="* can [AI/ChatGPT/DeepSeek] help me [slot 1]" data-fill-example aria-describedby="add-rule-pattern-hint" maxlength="180" required>
+            <input id="add-rule-pattern" type="text" class="pattern-input" placeholder="I wish AI could [slot 1]" data-fill-example aria-describedby="add-rule-pattern-hint" maxlength="180" required>
             <p class="pattern-key" id="add-rule-pattern-hint">Write a pattern. Use <code>*</code> for extra words.</p>
             <label for="add-rule-reply">Reply template</label>
-            <input id="add-rule-reply" placeholder="How would you like AI to help you [slot 1]?" data-fill-example aria-describedby="add-rule-reply-hint" maxlength="160" required>
+            <input id="add-rule-reply" placeholder="What would it mean to you if AI could [slot 1]?" data-fill-example aria-describedby="add-rule-reply-hint" maxlength="160" required>
             <p class="pattern-key" id="add-rule-reply-hint">Reply when this rule matches.</p>
             <p class="pattern-key">New rules go to the top of this group.</p>
             <div id="add-rule-slots" class="available-slots"></div>
@@ -172,8 +174,16 @@
           <div class="panel-heading">
             <h2 class="panel-title" id="substitution-title"><span class="step-number">3</span> Substitute pronouns for the reply</h2>
           </div>
-          <p class="substitution-description">Each slot holds words matched by a rule.</p>
-          <p class="substitution-example"><span>Example:</span> <span><mark>my</mark> friend helps <mark>me</mark></span> <span>→</span> <span><mark>your</mark> friend helps <mark>you</mark></span></p>
+          <details class="pattern-guide substitution-guide">
+            <summary>Pronoun substitutions</summary>
+            <ul class="pronoun-pairs">
+              <li><code>I</code> → <code>you</code></li>
+              <li><code>me</code> → <code>you</code></li>
+              <li><code>my</code> → <code>your</code></li>
+              <li><code>you</code> → <code>I</code></li>
+              <li><code>your</code> → <code>my</code></li>
+            </ul>
+          </details>
           <p id="substitution-status" class="substitution-status"></p>
           <table id="substitution-table" class="substitution-table" hidden>
             <thead><tr><th scope="col">Slot text (before)</th><th scope="col">Slot text (after)</th></tr></thead>
@@ -209,7 +219,31 @@
         <h2 id="output-title" class="flow-title">Output</h2>
         <output id="explained-output" for="explained-input" aria-labelledby="output-title">Run a message to see the reply.</output>
       </section>
-      <p class="lab-challenge"><strong>Challenge:</strong> Can you enable ELIZA to discuss AI?</p>
+      <p class="lab-challenge"><strong>Challenge:</strong> Can you give ELIZA a new topic to talk about?</p>
+      <details class="eliza-workspace" id="eliza-workspace">
+        <summary>Save your ELIZA</summary>
+        <div class="workspace-load">
+          <label for="workspace-version">Load rules from</label>
+          <select id="workspace-version"><option value="">ELIZA (default)</option></select>
+          <button type="button" id="load-eliza" class="edit-button">Load</button>
+          <button type="button" id="delete-saved-eliza" class="text-button" hidden>Delete saved version</button>
+          <button type="button" id="undo-delete-version" class="text-button" hidden>Undo delete</button>
+        </div>
+        <form id="save-eliza-form" class="workspace-save">
+          <label for="eliza-name">Name</label>
+          <input id="eliza-name" value="myELIZA" maxlength="40" required>
+          <button type="submit" id="save-eliza" class="edit-button">Save to Chat</button>
+          <button type="button" id="save-eliza-copy" class="text-button" hidden>Save as a new version</button>
+        </form>
+        <p class="workspace-hint">Keep up to 3 versions in this browser, then choose one in Chat. Saved versions stay after a refresh.</p>
+        <p id="workspace-status" class="editor-status" role="status"></p>
+        <div class="workspace-start">
+          <button type="button" id="build-from-scratch" class="text-button">Advanced challenge: Build from scratch</button>
+          <span>Start with just one general reply: “Tell me more.”</span>
+          <button type="button" id="start-from-eliza" class="text-button">Start from ELIZA</button>
+          <button type="button" id="undo-workspace" class="text-button" hidden>Undo workspace change</button>
+        </div>
+      </details>
     </section>
 
     <section id="compare-panel" role="tabpanel" aria-labelledby="compare-tab" hidden>
@@ -322,10 +356,10 @@
     <template id="pattern-reply-example">
       <details class="pattern-key">
         <summary>Pattern and reply example</summary>
-        <p><strong>Input</strong> Can AI help me prepare for my exam?</p>
-        <p><strong>Pattern</strong> <code>* can [AI/ChatGPT/DeepSeek] help me [slot 1]</code></p>
-        <p><strong>Reply template</strong> <code>How would you like AI to help you [slot 1]?</code></p>
-        <p><code>[slot 1]</code> keeps <strong>prepare for my exam</strong>. Step 3 changes <code>my</code> to <code>your</code> for the reply.</p>
+        <p><strong>Input</strong> I wish AI could understand me.</p>
+        <p><strong>Pattern</strong> <code>I wish AI could [slot 1]</code></p>
+        <p><strong>Reply template</strong> <code>What would it mean to you if AI could [slot 1]?</code></p>
+        <p><code>[slot 1]</code> keeps <strong>understand me</strong>. Step 3 changes <code>me</code> to <code>you</code> for the reply.</p>
       </details>
     </template>
     <footer>
